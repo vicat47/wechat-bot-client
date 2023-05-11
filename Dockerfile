@@ -15,6 +15,6 @@ COPY package*.json .
 RUN npm install --production --registry=https://registry.npmmirror.com
 
 COPY --from=builder /app/out .
-COPY config .
+COPY ./config/* ./config/
 
 ENTRYPOINT ["node", "app.js"]
