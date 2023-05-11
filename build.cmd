@@ -1,0 +1,1 @@
+docker buildx build -t zsb514/wechat-bot-client:latest --platform=linux/amd64,linux/arm/v7 . --push

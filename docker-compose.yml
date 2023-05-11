@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  wechat_bot:
+    image: zsb514/wechat-bot-client:latest
+    container_name: wechat_bot
+    environment:
+      - WECHAT_ADMIN=wxid_xxxxxxxx
+      - WECHAT_ID=你的微信id
+      - WECHAT_NAME=你的微信名称
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./data:/app/data
+      # - ./config/local.toml:/app/config/local.toml
+    network_mode: bridge
+    restart: unless-stopped

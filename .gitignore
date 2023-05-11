@@ -1,0 +1,7 @@
+node_modules
+.idea
+package-lock.json
+out
+data
+test_data
+config/local*

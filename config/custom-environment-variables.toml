@@ -1,0 +1,6 @@
+[Customer]
+admin = "WECHAT_ADMIN"
+
+[Customer.wechat_server]
+id = "WECHAT_ID"
+name = "WECHAT_NAME"
