@@ -3,3 +3,6 @@ admin = "WECHAT_ADMIN"
 [wechat_server]
 id = "WECHAT_ID"
 name = "WECHAT_NAME"
+httpUrl = "WECHAT_HTTP_URL"
+webSocketUrl = "WECHAT_WS_URL"
+mqttUrl = "MQTT_URL"

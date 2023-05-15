@@ -4,10 +4,25 @@
 
 ## 功能列表
 
-- 查询天气（济南）
-- 摸鱼
-- 晨报
-- 报菜名
+| 标题 | 简介 | 用法 | 状态🚫✅ | 文件目录 |
+| ---  | ---- | --- | --- | ------- | 
+| chat_glm_6b | 本地部署 chat_glm，并通过http 接口调用 | ai 传递给 chatglm 的内容 | 🚫 | `modules/chat_glm_6b` |
+| chat_gpt_api | 调用 chat_gpt_api，询问 ai 内容（需配置gpt密钥，科学上网） | ai 传递给 chatgpt 的内容 | ✅ | `modules/chat_gpt_api` |
+| dingdong | dingdong bot，给机器人发 ding，机器人返回 dong | 仅管理员可用。 | ✅ | `modules/dingdong` |
+| homeassistant | homeassistant 服务，调用本地的某些服务 | 请参考模块内容进行重写 | ✅ | `modules/homeassistant` |
+| jenkins | jenkins 自动构建服务，可以通过发送聊天触发构建项目 | jenkins构建 项目名称 | 🚫 | `modules/jenkins` |
+| newspaper | 通过调用服务获取每日新闻 | 新闻 | 🚫 | `modules/newspaper` |
+| stable_diffusion | 通过调用本地部署的 stable_diffusion 进行 ai 绘图，依赖另一个图片转发的项目 | AI画图 正向标签\\n逆向标签 | 🚫 | `modules/stable_diffusion` |
+| weather | 通过调用魅族的天气服务获取天气信息 | 天气 | 🚫 | `modules/weather` |
+
+## Useage
+
+### docker 启动
+
+请使用 `docker-compose.yaml` 启动。
+```bash
+docker compose up -d
+```
 
 ## 项目树结构
 
@@ -51,9 +66,20 @@ src
 
 ### 当前流程
 
-![](./assets/00_流程.drawio.svg)
+![](./assets/01_mqtt.drawio.svg)
 
 ## 设计
+
+### MQTT topic
+
+| 名称 | 备注 | topic |
+| --- | --- | --- |
+| 发送单聊消息 |  | wechat/{登录的WXID}/send/user/{目标用户WXID} |
+| 发送群聊消息 |  | wechat/{登录的WXID}/send/group/{目标群的WXID} |
+| 模块加载启动消息 |  | wechat/services/{模块的Code} |
+| 接收公众号消息 |  | wechat/{登录的WXID}/receve/subscriptions/{公众号WXID} |
+| 接收到群聊消息 |  | wechat/{登录的WXID}/receve/groups/{群组ID}/users/{发送人ID}/{是否为@我} |
+| 接收到单聊消息 |  | wechat/{登录的WXID}/receve/users/{发送人ID} |
 
 ### 功能点设计
 

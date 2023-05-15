@@ -1,6 +1,46 @@
 version: '3.7'
 
 services:
+  # wechat_server:
+  #   image: "chisbread/wechat-service:latest"
+  #   restart: unless-stopped
+  #   container_name: "wechat-service"
+  #   environment:
+  #     TARGET_AUTO_RESTART: "yes"
+  #     INJMON_LOG_FILE: "/dev/stdout"
+  #     # 微信的登陆态判断接口
+  #     INJ_CONDITION: " [ \"`sudo netstat -tunlp | grep 5555`\" != '' ] && exit 0 ; sleep 5 ; curl 'http://127.0.0.1:8680/hi' 2>/dev/null | grep -P 'code.:0'"
+  #     HOOK_PROC_NAME: "WeChat"
+  #     TARGET_CMD: "wechat-start"
+  #     HOOK_DLL: "auto.dll"
+  #     #optional INJMON_LOG_FILE: "/dev/null"
+  #     #optional TARGET_LOG_FILE: "/dev/stdout"
+  #   ports:
+  #     - "8080:8080" # noVNC
+  #     - "5555:5555" # websocket server
+  #     # - "5900:5900" # vnc server
+  #   extra_hosts:
+  #     - "dldir1.qq.com:127.0.0.1"
+  #   volumes:
+  #     - "wechat_files:/home/app/WeChat Files/"
+  #     - "wechat_data:/home/app/.wine/drive_c/users/app/AppData/"
+  #     - "wechat_config:/home/app/.wine/drive_c/temp/wechat/" # hook config
+  #   tty: true
+
+  mqtt_server:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    # ports:
+    #   - 9002:1883
+    #   - 8883:8883
+    #   - 9001:9001
+    volumes:
+      - ./data:/mosquitto/data
+      # - ./config:/mosquitto/config
+      # - ./log:/mosquitto/log
+      # - ./cert:/mosquitto/certs
+    restart: unless-stopped
+
   wechat_bot:
     image: zsb514/wechat-bot-client:latest
     container_name: wechat_bot
@@ -8,6 +48,10 @@ services:
       - WECHAT_ADMIN=wxid_xxxxxxxx
       - WECHAT_ID=你的微信id
       - WECHAT_NAME=你的微信名称
+      # 若启动 wechat_server，则下面地址均无需填写
+      - WECHAT_HTTP_URL=微信的HTTP接口地址
+      - WECHAT_WS_URL=微信的WebSocket接口地址
+      # - MQTT_URL=MQTT的地址
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
@@ -15,3 +59,5 @@ services:
       # - ./config/local.toml:/app/config/local.toml
     network_mode: bridge
     restart: unless-stopped
+    # depends_on:
+    #   - wechat_server
