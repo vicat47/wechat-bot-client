@@ -1,8 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
-import { IWebServiceConfig } from '../../config';
+import { IWechatWebRequestService } from '../../config';
 
 class RestServiceFactory {
-    public static createService(config: IWebServiceConfig): AxiosInstance {
+    public static createService(config: IWechatWebRequestService): AxiosInstance {
         const service = axios.create({
             baseURL: config.baseUrl,
             // withCredentials: true, // send cookies when cross-domain requests

@@ -1,8 +1,8 @@
 import axios from "axios";
-import { IWebServiceConfig } from "../config";
+import { IWechatWebRequestService } from "../config";
 
 class AlApiServiceFactory {
-    public static createService(config: IWebServiceConfig) {
+    public static createService(config: IWechatWebRequestService) {
         let service = axios.create({
             baseURL: config.baseUrl,
             withCredentials: true, // send cookies when cross-domain requests

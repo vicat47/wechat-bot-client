@@ -1,6 +1,6 @@
 const roomIdSplitter = "@"
 
-enum WechatMessageType {
+export enum WechatMessageType {
     HEART_BEAT = 5005,
     RECV_TXT_MSG = 1,
     RECV_PIC_MSG = 3,
@@ -55,10 +55,18 @@ class WeChatMessage {
     static personal_msg(): WeChatMessage {
         return new WeChatMessage(WechatMessageType.PERSONAL_INFO);
     }
+
+    static user_list(): WeChatMessage {
+        return new WeChatMessage(WechatMessageType.USER_LIST);
+    }
+
+    static group_user_list(): WeChatMessage {
+        return new WeChatMessage(WechatMessageType.CHATROOM_MEMBER);
+    }
 }
 
 type WechatMsgContentType = string | any[] | XMLMessageContent
-class RecvMsg<T extends WechatMsgContentType> {
+export class RecvMsg<T extends WechatMsgContentType> {
     /**
      * 实际的消息内容
      */
@@ -116,5 +124,4 @@ export interface XMLMessageContent {
     detail?: string
 }
 
-export { RecvMsg, WechatMessageType };
 export default WeChatMessage;

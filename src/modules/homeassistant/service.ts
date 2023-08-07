@@ -5,24 +5,29 @@ import { AxiosInstance } from 'axios';
 import { IHomeAssistantState, IPM25Attribute, ITemperatureAttribute, IHumidityAttribute } from './api';
 
 import config from "config";
+import { IWechatConfig } from '../../config';
+import { getClientName } from '../../system/sys_config';
+import path from 'path';
 
-let configList;
-try {
-    configList = config.get("modules.homeassistant") as IHomeAssistantConfig[];
-} catch(error) {
-    console.warn("获取模块配置 modules.homeassistant 出错！")
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get("modules.homeassistant") as IHomeAssistantConfig[];
+// } catch(error) {
+//     console.warn("获取模块配置 modules.homeassistant 出错！")
+//     throw error;
+// }
 
 
 class HomeAssistantService extends BaseWechatMessageProcessService {
-    serviceCode: string = "home-assistant-service";
+    serviceCode: string = serviceCode;
     private _service;
     private _config;
     get config(): IHomeAssistantConfig { return this._config };
     get service(): AxiosInstance { return this._service };
-    constructor(config: IHomeAssistantConfig) {
-        super();
+    constructor(clientConfig: IWechatConfig, config: IHomeAssistantConfig) {
+        super(clientConfig, config);
         this._config = config;
         this._service = serviceFactory.createService(config);
     }
@@ -30,22 +35,22 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
     
-    canProcess(message: base_wechat): boolean {
+    async canProcess(message: base_wechat): Promise<boolean> {
         if (typeof message.content !== 'string') {
             return false;
         }
-        if (message.groupId !== null && `@${config.get("wechat_server.name")} `.indexOf(message.content) < 0) {
+        if (message.groupId !== null && `@${getClientName(this.clientId)} `.indexOf(message.content) < 0) {
             return false;
         }
-        let content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         if (content === '空气质量' || content === '湿度' || content === '温度') {
             return true;
         }
@@ -53,7 +58,7 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
     }
     async replyMessage(message: base_wechat): Promise<string | null> {
         let receivedMsg = message.content as string;
-        receivedMsg = receivedMsg.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        receivedMsg = receivedMsg.replace(`@${getClientName(this.clientId)} `, '').trim();
         if (receivedMsg === '空气质量') {
             let deviceId = this.config.sensor.find(sensor => sensor.type === HomeAssistantSensorType.PM25)?.device_id
             return await this.getPM25DataAsMsg(deviceId ?? '');
@@ -122,8 +127,12 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
     }
 }
 
-const serviceList: HomeAssistantService[] = configList.map(c => new HomeAssistantService(c));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IHomeAssistantConfig): HomeAssistantService {
+    return new HomeAssistantService(wechatConfig, chatgptConfig);
+}
+
+// const serviceList: HomeAssistantService[] = configList.map(c => new HomeAssistantService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;
 
 // 测试代码
 // (async () => { console.log(await getPM25DataAsMsg('sensor.zhimi_ma4_d33c_pm25_density')) })();

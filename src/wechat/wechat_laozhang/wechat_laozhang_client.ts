@@ -7,6 +7,7 @@ import * as mqtt from "mqtt";
 import { BaseWechatClient } from "../wechat_client";
 import { WechatXMLMessage } from "../xml_message";
 import config from "config";
+import { IBaseContentMessage, IGroupUserContent, IUserContent } from "../data";
 
 class WechatLaoZhangClient extends BaseWechatClient {
     private _mqttClient: mqtt.MqttClient | undefined;
@@ -38,7 +39,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
                 await that.getMe();
                 that.mqttClient = mqtt.connect(that.config.mqttUrl);
                 console.log(`mqtt client 已连接`);
-                that.subscribeSendMessage();
+                that.subscribeMqttMessage();
                 for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
                     await that.sendTxtMsg(`wxid: ${that.config.id} 服务已启动，已连接`, adminUser);
                 }
@@ -55,6 +56,30 @@ class WechatLaoZhangClient extends BaseWechatClient {
         let res = await service.post(this.config.httpUrl + "/api/get_personal_info", JSON.stringify(sendMsg));
         console.log(res);
         return res;
+    }
+
+    getUserList(): Promise<IBaseContentMessage<IUserContent>> {
+        let msg = WeChatMessage.user_list();
+        let sendMsg = {
+            para: msg
+        }
+        return service.post<IBaseContentMessage<IUserContent>>(this.config.httpUrl + "/api/getcontactlist", JSON.stringify(sendMsg))
+            .then(res => {
+                console.log(res);
+                return res.data;
+            });
+    }
+
+    getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>> {
+        let msg = WeChatMessage.group_user_list();
+        let sendMsg = {
+            para: msg
+        }
+        return service.post<IBaseContentMessage<IGroupUserContent>>(this.config.httpUrl + "/api/get_charroom_member_list", JSON.stringify(sendMsg))
+            .then(res => {
+                console.log(res);
+                return res.data;
+            });
     }
 
     async sendTxtMsg(content: string, target: string): Promise<any> {

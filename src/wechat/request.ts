@@ -24,7 +24,7 @@ service.interceptors.response.use(
         if (response.status !== 200) {
             return Promise.reject(new Error(response.data?.content || 'Error'));
         }
-        return response.data;
+        return response;
     },
     error => {
         console.log('err ' + error); // for debug

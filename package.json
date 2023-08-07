@@ -1,6 +1,6 @@
 {
   "name": "meng_wechat_client",
-  "version": "0.1.0",
+  "version": "2.0.0_alpha",
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --ext js,ts --exec \"./node_modules/.bin/ts-node src/app.ts\""
@@ -23,6 +23,7 @@
     "typescript": "^4.5.4"
   },
   "dependencies": {
+    "ajv": "^8.12.0",
     "axios": "^0.24.0",
     "cheerio": "^1.0.0-rc.10",
     "config": "^3.3.9",
@@ -30,10 +31,15 @@
     "fast-xml-parser": "^4.0.7",
     "feedparser": "^2.2.10",
     "mqtt": "^4.3.7",
+    "node-cache": "^5.1.2",
     "node-schedule": "^2.1.0",
+    "pg": "^8.11.1",
+    "reflect-metadata": "^0.1.13",
     "rss-feed-emitter": "^3.2.3",
     "toml": "^3.0.0",
     "ts-xpath": "^0.3.1",
+    "typeorm": "^0.3.17",
+    "typeorm-in-memory-cache": "^1.0.2",
     "ws": "^8.5.0"
   }
 }

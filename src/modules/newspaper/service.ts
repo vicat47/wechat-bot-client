@@ -7,14 +7,17 @@ import { AxiosInstance } from "axios";
 import { IMorningNewspaperConfig } from "./config";
 import path from 'path'
 import config from "config";
+import { IWechatConfig } from "../../config";
 
-let configList;
-try {
-    configList = config.get(`modules.${ path.basename(__dirname) }`) as IMorningNewspaperConfig[];
-} catch(error) {
-    console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get(`modules.${ path.basename(__dirname) }`) as IMorningNewspaperConfig[];
+// } catch(error) {
+//     console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
+//     throw error;
+// }
 
 interface NewspaperData {
     date: string
@@ -32,16 +35,15 @@ function newspaperDataFormat(newspaper: NewspaperData): string {
 class NewspaperService extends BaseWechatMessageProcessService {
     config: IMorningNewspaperConfig;
     service: AxiosInstance;
-    serviceCode: string = "newspaper-service";
-
-    constructor(config: IMorningNewspaperConfig) {
-        super();
+    serviceCode: string = serviceCode;
+    constructor(clientConfig: IWechatConfig, config: IMorningNewspaperConfig) {
+        super(clientConfig, config);
         this.config = config;
         this.service = serviceFactory.createService(config);
     }
 
-    canProcess(message: base_wechat): boolean {
-        return BaseWechatMessageProcessService.simpleMessageProcessorTest(message, ["新闻"]);
+    async canProcess(message: base_wechat): Promise<boolean> {
+        return this.simpleMessageProcessorTest(message, ["新闻"]);
     }
 
     replyMessage(message: base_wechat): Promise<string | null> {
@@ -56,10 +58,10 @@ class NewspaperService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
@@ -109,5 +111,8 @@ class NewspaperService extends BaseWechatMessageProcessService {
     }
 }
 
-const serviceList: BaseWechatMessageProcessService[] = configList.map(config => new NewspaperService(config));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IMorningNewspaperConfig): NewspaperService {
+    return new NewspaperService(wechatConfig, chatgptConfig);
+}
+// const serviceList: BaseWechatMessageProcessService[] = configList.map(c => new NewspaperService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

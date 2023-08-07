@@ -4,14 +4,17 @@ import base_wechat, { BaseWechatMessageProcessService } from '../../wechat/base_
 import path from 'path'
 import config from "config";
 import { IWeatherConfig } from './config';
+import { IWechatConfig } from '../../config';
 
-let configList;
-try {
-    configList = config.get(`modules.${ path.basename(__dirname) }`) as IWeatherConfig[];
-} catch(error) {
-    console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get(`modules.${ path.basename(__dirname) }`) as IWeatherConfig[];
+// } catch(error) {
+//     console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
+//     throw error;
+// }
 
 
 // 天气预报接口 http://aider.meizu.com/app/weather/listWeather?cityIds=101120101
@@ -79,13 +82,13 @@ class WeatherService extends BaseWechatMessageProcessService {
 
     get config(): IWeatherConfig { return this._config };
     service?: AxiosInstance;
-    serviceCode: string = "meizu-weather-service";
-    constructor(config: IWeatherConfig) {
-        super();
+    serviceCode: string = serviceCode;
+    constructor(clientConfig: IWechatConfig, config: IWeatherConfig) {
+        super(clientConfig, config);
         this._config = config;
     }
-    canProcess(message: base_wechat): boolean {
-        return BaseWechatMessageProcessService.simpleMessageProcessorTest(message, ['天气']);
+    async canProcess(message: base_wechat): Promise<boolean> {
+        return this.simpleMessageProcessorTest(message, ['天气']);
     }
     async replyMessage(message: base_wechat): Promise<string | null> {
         const { content, name, level, temp, sendibleTemp, wea, wD, wS } = await getWeatherInfo(this.config.baseUrl, this.config.cityId);
@@ -104,9 +107,9 @@ ${content}
     }
     getTopics(): string[] {
         let topicList = [];
-        topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/groups/#`);
+        topicList.push(`wechat/${ this.clientId }/receve/groups/#`);
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
@@ -122,5 +125,8 @@ ${content}     `;
     }
 }
 
-const serviceList: WeatherService[] = configList.map(c => new WeatherService(c));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IWeatherConfig): WeatherService {
+    return new WeatherService(wechatConfig, chatgptConfig);
+}
+// const serviceList: WeatherService[] = configList.map(c => new WeatherService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

@@ -2,53 +2,16 @@
 ## 如果有多个，请用逗号分割
 admin = '请指定您的WXID'
 
-[wechat_server]
-# （必填）http 链接的 url
-httpUrl = 'http://wechat_server:5555'
-# （必填）websocket 的 url
-webSocketUrl = 'ws://wechat_server:5555'
-# （必填）mqtt 的 url
-mqttUrl = 'mqtt://mqtt_server:9002'
-# （必填）名称，主要用于判断是否被 @
-name = '小v女仆'
-# （必填）id，监听的微信 ID
-id = 'wxid_xxxxxxxxxx'
+[datasource]
+type = "postgres"
+host = "127.0.0.1"
+port = 5432
+schema = "public"
+username = "postgres"
+password = "postgres"
+database = "wechat_bot"
 
 # 节假日 API 配置
 [holiday]
 api = 'https://api.apihubs.cn/holiday/get'
 param = { holiday_recess = 1, cn = 1, size = 50 }
-
-
-# 模块列表
-[modules]
-
-# chat_gpt_api 的配置
-[[modules.chat_gpt_api]]
-# （必填）api 地址
-baseUrl = 'https://api.openai.com/v1/chat/completions'
-# （必填）API 认证信息
-auth = { type = "bearer", token = "xxxxxxxxxxxxxxxxx" }
-# 代理访问信息
-proxy = { protocol = 'http', host = 'host.docker.internal', port = 7890 }
-# （必填）x条信息后清空上下文
-memory = 6
-# prompt
-# prompt = "I want you to act as a Morse code translator. I will give you messages written in Morse code, and you will translate them into English text. Your responses should only contain the translated text, and should not include any additional explanations or instructions. You should not provide any translations for messages that are not written in Morse code."
-# （必填）模型名称，请在官网查询
-module = "gpt-3.5-turbo-0301"
-# 允许访问该服务的微信群
-attachedRoomId = [
-    'xxxxxxxx@chatroom', # 你要给的群
-]
-# 允许访问该服务的单聊
-singleContactWhiteList = [
-    'wxid_xxxxxxxxxxxx', # 你要给的人
-]
-
-# 天气查询服务
-[[modules.weather]]
-# url
-baseUrl = 'http://aider.meizu.com/app'
-# 城市 ID
-cityId = 101120101

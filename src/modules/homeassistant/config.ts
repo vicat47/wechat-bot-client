@@ -1,6 +1,6 @@
-import { IWebServiceConfig, WechatRoomMsg } from "../../config";
+import { IWechatWebRequestService, IWechatRoomService } from "../../config";
 
-export interface IHomeAssistantConfig extends WechatRoomMsg, IWebServiceConfig {
+export interface IHomeAssistantConfig extends IWechatRoomService, IWechatWebRequestService {
     statePath: string;
     sensor: HomeAssistantSensor[]
 }

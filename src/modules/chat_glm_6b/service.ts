@@ -3,35 +3,38 @@ import factory from "./request";
 import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
 import { IChatGlmConfig } from "./config";
 import config from "config";
+import { IWechatConfig } from "../../config";
+import { getClientName } from "../../system/sys_config";
+import path from "path";
 
 const regex = /ai\s+(.+)/;
 const contentRegex = new RegExp(regex);
+export const serviceCode = path.basename(__dirname);
 
-let configList;
-try {
-    configList = config.get("modules.chat_glm_6b") as IChatGlmConfig[];
-} catch(error) {
-    console.warn("获取模块配置 modules.chat_glm_6b 出错！")
-    throw error;
-}
+// let configList;
+// try {
+//     configList = config.get("modules.chat_glm_6b") as IChatGlmConfig[];
+// } catch(error) {
+//     console.warn("获取模块配置 modules.chat_glm_6b 出错！")
+//     throw error;
+// }
 
 class ChatGLMService extends BaseWechatMessageProcessService {
 
-    serviceCode: string = "chat-glm-6b-service";
+    serviceCode: string = serviceCode;
 
     private _service;
     private _config: IChatGlmConfig;
 
     get config(): IChatGlmConfig { return this._config };
     get service(): AxiosInstance { return this._service };
-    
-    constructor(config: IChatGlmConfig) {
-        super();
+    constructor(clientConfig: IWechatConfig, config: IChatGlmConfig) {
+        super(clientConfig, config);
         this._service = factory.createService(config);
         this._config = config;
     }
 
-    canProcess(message: BaseWechatMessage): boolean {
+    async canProcess(message: BaseWechatMessage): Promise<boolean> {
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -48,11 +51,11 @@ class ChatGLMService extends BaseWechatMessageProcessService {
             return false;
         }
         // 不是 @ 我
-        if (message.content.indexOf(`@${config.get("wechat_server.name")} `) < 0) {
+        if (message.content.indexOf(`@${getClientName(this.clientId)} `) < 0) {
             return false;
         }
         // 去掉 @
-        let content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         return content.substring(0, 2) === 'ai';
     }
 
@@ -62,14 +65,14 @@ class ChatGLMService extends BaseWechatMessageProcessService {
             return null;
         }
         // 去除 @ 符
-        message.content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        message.content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         let target = message.groupId ? message.groupId: message.senderId;
         let result = contentRegex.exec(message.content);
         if (result === null) {
             return null;
         }
         let aiReply = await this.service.post('/chat', {
-            source: `${config.get("wechat_server.id")}:${target}`,
+            source: `${this.clientId}:${target}`,
             data: result[1]
         }).then(d => d.data)
         .catch(() => {});
@@ -90,17 +93,20 @@ class ChatGLMService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         
         return topicList;
     }
 }
 
-const serviceList: ChatGLMService[] = configList.map(c => new ChatGLMService(c));
+export function register(wechatConfig: IWechatConfig, moduleConfig: IChatGlmConfig): ChatGLMService {
+    return new ChatGLMService(wechatConfig, moduleConfig);
+}
 
-export default serviceList;
+// const serviceList: ChatGLMService[] = configList.map(c => new ChatGLMService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

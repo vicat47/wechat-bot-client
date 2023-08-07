@@ -1,4 +1,4 @@
-import { IWebServiceConfig, WechatRoomMsg } from "../../config";
+import { IWechatWebRequestService, IWechatRoomService } from "../../config";
 
-export interface ITemplateConfig extends WechatRoomMsg, IWebServiceConfig {
+export interface ITemplateConfig extends IWechatRoomService, IWechatWebRequestService {
 }

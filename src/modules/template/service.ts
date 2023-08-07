@@ -4,37 +4,40 @@ import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat
 import { ITemplateConfig } from "./config";
 import path from 'path'
 import config from "config";
+import { getClientName } from "../../system/sys_config";
+import { IWechatConfig } from "../../config";
 
-let configList;
-try {
-    configList = config.get(`modules.${ path.basename(__dirname) }`) as ITemplateConfig[];
-} catch(error) {
-    console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get(`modules.${ path.basename(__dirname) }`) as ITemplateConfig[];
+// } catch(error) {
+//     console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
+//     throw error;
+// }
 
 const regex = `templateHeader\s*(.+)`;
 const contentRegex = new RegExp(regex);
 
 class TemplateService extends BaseWechatMessageProcessService {
 
-    serviceCode: string = "service code";
+    serviceCode: string = serviceCode;
 
     private _service;
     private _config: ITemplateConfig;
 
     get config(): ITemplateConfig { return this._config };
     get service(): AxiosInstance { return this._service };
-    
-    constructor(config: ITemplateConfig) {
-        super();
+    constructor(clientConfig: IWechatConfig, config: ITemplateConfig) {
+        super(clientConfig, config);
         this._service = factory.createService(config);
         this._config = config;
     }
 
-    canProcess(message: BaseWechatMessage): boolean {
+    async canProcess(message: BaseWechatMessage): Promise<boolean> {
         // TODO: 修改关键字
-        return BaseWechatMessageProcessService.simpleMessageProcessorTest(message, ['关键字列表']);
+        return this.simpleMessageProcessorTest(message, ['关键字列表']);
     }
 
     async replyMessage(message: BaseWechatMessage): Promise<string | null> {
@@ -43,7 +46,7 @@ class TemplateService extends BaseWechatMessageProcessService {
             return null;
         }
         // 去除 @ 符
-        message.content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        message.content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         let result = contentRegex.exec(message.content);
         if (result === null) {
             return null;
@@ -62,15 +65,18 @@ class TemplateService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
 }
 
-const serviceList: TemplateService[] = configList.map(c => new TemplateService(c));
+export function register(wechatConfig: IWechatConfig, chatgptConfig: ITemplateConfig): TemplateService {
+    return new TemplateService(wechatConfig, chatgptConfig);
+}
+// const serviceList: TemplateService[] = configList.map(c => new TemplateService(config.get("wechat_server") as IWechatConfig, c));
 
-export default serviceList;
+// export default serviceList;

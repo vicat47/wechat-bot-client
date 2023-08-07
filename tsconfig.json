@@ -4,7 +4,9 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true,
-    "outDir": "out"
+    "outDir": "out",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
   },
   "exclude": ["node_modules", "**/*.spec.ts"]
 }

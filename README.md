@@ -4,7 +4,7 @@
 
 ## 功能列表
 
-| 标题 | 简介 | 用法 | 状态🚫✅ | 文件目录 |
+| 标题 | 简介 | 用法 | 默认状态<br/>🚫✅ | 文件目录 |
 | ---  | ---- | --- | --- | ------- | 
 | chat_glm_6b | 本地部署 chat_glm，并通过http 接口调用 | ai 传递给 chatglm 的内容 | 🚫 | `modules/chat_glm_6b` |
 | chat_gpt_api | 调用 chat_gpt_api，询问 ai 内容（需配置gpt密钥，科学上网） | ai 传递给 chatgpt 的内容 | ✅ | `modules/chat_gpt_api` |
@@ -31,6 +31,9 @@ src
 ├─ alapi
 ├─ app.ts                  # 入口类
 ├─ caffeine
+├─ entity                  # 数据库实体
+├─ mqtt                    # 系统 mqtt 操作
+├─ system                  # 系统相关指令，以及数据库操作
 ├─ config.ts
 ├─ modules                 # 各种模块
 │    ├─ chat_glm_6b        # glm 模块
@@ -62,15 +65,13 @@ src
 1. 为什么一个消息会回复4次
    1. 原因是启动了多个模块，请尝试仅保持一个连接
 
-## 流程设计
+## 流程
 
 ### 当前流程
 
 ![](./assets/01_mqtt.drawio.svg)
 
-## 设计
-
-### MQTT topic
+## MQTT topic
 
 | 名称 | 备注 | topic |
 | --- | --- | --- |
@@ -80,7 +81,10 @@ src
 | 接收公众号消息 |  | wechat/{登录的WXID}/receve/subscriptions/{公众号WXID} |
 | 接收到群聊消息 |  | wechat/{登录的WXID}/receve/groups/{群组ID}/users/{发送人ID}/{是否为@我} |
 | 接收到单聊消息 |  | wechat/{登录的WXID}/receve/users/{发送人ID} |
+| 发送系统调用 |  | wechat/{登录的WXID}/send/sys |
+| 接收系统调用回复 |  | wechat/{登录的WXID}/receve/sys |
 
-### 功能点设计
-
-一个功能可能有多个功能点，功能点为树形结构。
+# TODOS
+- [x] 更改服务导入方式，改为导入 service 类并通过代码初始化
+- [ ] 为必要的db 操作加入缓存操作。
+- [ ] 

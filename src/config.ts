@@ -8,26 +8,30 @@ export interface IWechatConfig {
   id: string;
 }
 
-export interface WechatRoomMsg {
+export interface IWechatService {
+  id: string;
+}
+
+export interface IWechatRoomService extends IWechatService {
   attachedRoomId: string[];
   singleContactWhiteList?: string[];
 }
 
-export interface WechatBoardcastMsg {
+export interface WechatBoardcastService extends IWechatService {
   boardcastRoomIds: string[];
 }
 
-export interface IWebServiceConfig {
-  baseUrl: string,
-  auth?: any
-  headers?: any
-  params?: any
-  proxy?: AxiosProxyConfig
+export interface IWechatWebRequestService extends IWechatService {
+  baseUrl: string;
+  auth?: any;
+  headers?: any;
+  params?: any;
+  proxy?: AxiosProxyConfig;
 }
 
-export interface ISubscriptionsMessageConfig extends WechatRoomMsg, WechatBoardcastMsg {
-  subscriptionId: string
-  content_selector: string
-  localFileName?: string
-  keywordsWhiteList?: string[]
+export interface ISubscriptionsMessageConfig extends IWechatRoomService, WechatBoardcastService {
+  subscriptionId: string;
+  content_selector: string;
+  localFileName?: string;
+  keywordsWhiteList?: string[];
 }

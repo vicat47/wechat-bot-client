@@ -5,20 +5,24 @@ import { IStableDiffusionConfig } from "./config";
 import {StableDiffusionServiceFactory, ImageSendServiceFactory} from "./request";
 import path from 'path'
 import config from "config";
+import { IWechatConfig } from "../../config";
+import { getClientName } from "../../system/sys_config";
 
-let configList;
-try {
-    configList = config.get(`modules.${ path.basename(__dirname) }`) as IStableDiffusionConfig[];
-} catch(error) {
-    console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get(`modules.${ path.basename(__dirname) }`) as IStableDiffusionConfig[];
+// } catch(error) {
+//     console.warn(`获取模块配置 modules.${ path.basename(__dirname) } 出错！`)
+//     throw error;
+// }
 
 const regex = `AI画图[\n|\s]+(.+)\n+(.+)`;
 const contentRegex = new RegExp(regex);
 
 class StableDiffusionService extends BaseWechatMessageProcessService {
-    serviceCode: string = "service code";
+    serviceCode: string = serviceCode;
 
     private _service;
     private _config: IStableDiffusionConfig;
@@ -27,15 +31,14 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
 
     get config(): IStableDiffusionConfig { return this._config };
     get service(): AxiosInstance { return this._service };
-    
-    constructor(config: IStableDiffusionConfig) {
-        super();
+    constructor(clientConfig: IWechatConfig, config: IStableDiffusionConfig) {
+        super(clientConfig, config);
         this._service = StableDiffusionServiceFactory.createService(config.stableService);
         this.sendService = ImageSendServiceFactory.createService(config.imageService);
         this._config = config;
     }
 
-    canProcess(message: BaseWechatMessage): boolean {
+    async canProcess(message: BaseWechatMessage): Promise<boolean> {
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -56,11 +59,11 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
             return false;
         }
         // 不是 @ 我
-        if (message.content.indexOf(`@${config.get("wechat_server.name")} `) < 0) {
+        if (message.content.indexOf(`@${getClientName(this.clientId)} `) < 0) {
             return false;
         }
         // 去掉 @
-        let content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         
         let result = contentRegex.exec(content);
         if (result === null) {
@@ -73,7 +76,7 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
         if (typeof message.content !== 'string') {
             return null;
         }
-        message.content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        message.content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         let result = contentRegex.exec(message.content);
         if (result === null) {
             return null;
@@ -112,14 +115,18 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
 }
 
-const serviceList: StableDiffusionService[] = configList.map(c => new StableDiffusionService(c));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IStableDiffusionConfig): StableDiffusionService {
+    return new StableDiffusionService(wechatConfig, chatgptConfig);
+}
+
+// const serviceList: StableDiffusionService[] = configList.map(c => new StableDiffusionService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

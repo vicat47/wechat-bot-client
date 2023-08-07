@@ -4,14 +4,19 @@ import { IJenkinsConfig } from "./config";
 import { AxiosInstance } from "axios";
 import { IJenkinsMainPageApi } from "./api";
 import config from "config";
+import { getClientName } from "../../system/sys_config";
+import { IWechatConfig } from "../../config";
+import path from "path";
 
-let configList;
-try {
-    configList = config.get("modules.jenkins") as IJenkinsConfig[];
-} catch(error) {
-    console.warn("获取模块配置 modules.jenkins 出错！")
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get("modules.jenkins") as IJenkinsConfig[];
+// } catch(error) {
+//     console.warn("获取模块配置 modules.jenkins 出错！")
+//     throw error;
+// }
 
 const regex = `(jenkins)构建\s*(.+)`;
 const jenkinsRegex = new RegExp(regex);
@@ -22,25 +27,24 @@ class JenkinsService extends BaseWechatMessageProcessService {
         let topicList = [];
         if (this.config.singleContactWhiteList !== undefined && this.config.singleContactWhiteList.length > 0) {
             topicList.push(...this.config.singleContactWhiteList.map(userId => {
-                return `wechat/${ config.get("wechat_server.id") }/receve/users/${ userId }/#`
+                return `wechat/${ this.clientId }/receve/users/${ userId }/#`
             }));
         }
         return topicList
     }
-    serviceCode: string = "jenkins-build-trigger";
+    serviceCode: string = serviceCode;
     private _service;
     private _config: IJenkinsConfig;
 
     get config(): IJenkinsConfig { return this._config };
     get service(): AxiosInstance { return this._service };
-    
-    constructor(config: IJenkinsConfig) {
-        super();
+    constructor(clientConfig: IWechatConfig, config: IJenkinsConfig) {
+        super(clientConfig, config);
         this._service = factory.createService(config);
         this._config = config;
     }
 
-    public canProcess(message: BaseWechatMessage): boolean {
+    public async canProcess(message: BaseWechatMessage): Promise<boolean> {
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -59,10 +63,10 @@ class JenkinsService extends BaseWechatMessageProcessService {
             return false;
         }
         // 不是 @ 我
-        if (message.content.indexOf(`@${config.get("wechat_server.name")} `) < 0) {
+        if (message.content.indexOf(`@${getClientName(this.clientId)} `) < 0) {
             return false;
         }
-        let content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         
         let result = jenkinsRegex.exec(content);
         if (result === null) {
@@ -75,7 +79,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
         if (typeof message.content !== 'string') {
             return null;
         }
-        message.content = message.content.replace(`@${config.get("wechat_server.name")} `, '').trim();
+        message.content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
         let result = jenkinsRegex.exec(message.content);
         if (result === null) {
             return null;
@@ -107,5 +111,9 @@ class JenkinsService extends BaseWechatMessageProcessService {
 
 }
 
-const serviceList: JenkinsService[] = configList.map(c => new JenkinsService(c));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IJenkinsConfig): JenkinsService {
+    return new JenkinsService(wechatConfig, chatgptConfig);
+}
+
+// const serviceList: JenkinsService[] = configList.map(c => new JenkinsService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

@@ -4,14 +4,18 @@ import getFutureHolidayString from "../../utils/holiday";
 import base_wechat, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
 import { IFishConfig } from "./config";
 import config from "config";
+import { IWechatConfig } from "../../config";
+import path from "path";
 
-let configList;
-try {
-    configList = config.get("modules.fishtouch") as IFishConfig[];
-} catch(error) {
-    console.warn("获取模块配置 modules.fishtouch 出错！")
-    throw error;
-}
+export const serviceCode = path.basename(__dirname);
+
+// let configList;
+// try {
+//     configList = config.get("modules.fishtouch") as IFishConfig[];
+// } catch(error) {
+//     console.warn("获取模块配置 modules.fishtouch 出错！")
+//     throw error;
+// }
 
 const weekdays: {
     label: string;
@@ -83,13 +87,13 @@ async function leaveWorkMsg() {
 class FishTouchService extends BaseWechatMessageProcessService {
     service?: AxiosInstance;
     config: IFishConfig;
-    serviceCode: string = "fish-touch-service";
-    constructor(config: IFishConfig) {
-        super();
+    serviceCode: string = serviceCode;
+    constructor(clientConfig: IWechatConfig, config: IFishConfig) {
+        super(clientConfig, config);
         this.config = config;
     }
-    canProcess(message: base_wechat): boolean {
-        return BaseWechatMessageProcessService.simpleMessageProcessorTest(message, ['摸鱼']);
+    async canProcess(message: base_wechat): Promise<boolean> {
+        return this.simpleMessageProcessorTest(message, ['摸鱼']);
     }
     async replyMessage(message: base_wechat): Promise<string | null> {
         return await this.fishTouchMsg();
@@ -103,10 +107,10 @@ class FishTouchService extends BaseWechatMessageProcessService {
     getTopics(): string[] {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ config.get("wechat_server.id") }/receve/groups/${ roomId }/#`
+            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ config.get("wechat_server.id") }/receve/users/${ adminUser }/#`);
+            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
         }
         return topicList;
     }
@@ -183,5 +187,9 @@ class FishTouchService extends BaseWechatMessageProcessService {
     }
 }
 
-const serviceList: FishTouchService[] = configList.map(c => new FishTouchService(c));
-export default serviceList;
+export function register(wechatConfig: IWechatConfig, chatgptConfig: IFishConfig): FishTouchService {
+    return new FishTouchService(wechatConfig, chatgptConfig);
+}
+
+// const serviceList: FishTouchService[] = configList.map(c => new FishTouchService(config.get("wechat_server") as IWechatConfig, c));
+// export default serviceList;

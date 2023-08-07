@@ -15,6 +15,7 @@ interface HolidayApiParam {
   size?: number;
 }
 
+// TODO: 这里有问题
 const holidayConfig = config.get("modules.chat_gpt_api") as HolidayConfig;
 
 dayjs.extend(customParseFormat);

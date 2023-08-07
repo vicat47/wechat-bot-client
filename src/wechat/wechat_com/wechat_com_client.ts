@@ -5,8 +5,10 @@ import { BaseWechatClient } from "../wechat_client";
 import { MqttClient } from "mqtt";
 import { IWechatConfig } from "../../config";
 import base_wechat from "../base_wechat";
+import { IBaseContentMessage, IGroupUserContent, IUserContent } from "../data";
 
 class WechatComClient extends BaseWechatClient {
+    
     get mqttClient(): MqttClient {
         throw new Error("Method not implemented.");
     }
@@ -45,6 +47,12 @@ class WechatComClient extends BaseWechatClient {
         let res = await WechatComClient.sendWeChatMessage(this.url, msg);
         console.log(res);
         return res;
+    }
+    getUserList(): Promise<IBaseContentMessage<IUserContent>> {
+        throw new Error("Method not implemented.");
+    }
+    getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>> {
+        throw new Error("Method not implemented.");
     }
     onClose(): void {
         throw new Error("Method not implemented.");
