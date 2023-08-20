@@ -1,36 +1,45 @@
 import { MqttClient } from "mqtt";
 import { IWechatConfig } from "../config";
 import BaseWechatMessage, { IWechatMqttSendMessage, WechatMessageTypeEnum } from "./base_wechat";
-import { IBaseContentMessage, IGroupUserContent, IUserContent } from "./data";
+import { IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent } from "./data";
 import { callSysMethod } from "../system/api";
 import { ISysCallRequest, ISysCallResponse, SysCallStatusEnum, getPromiseByRequestId } from "../system/sys_call";
+import { delay } from "../utils/tool";
 
 const SEND_MESSAGE_TOPIC_REG = new RegExp(/wechat\/[^\/]+\/send\/.+/);
 const SYS_CALL_MESSAGE_TOPIC_REG = new RegExp(/wechat\/[^\/]+\/send\/sys/);
 const SYS_CALL_MESSAGE_RECEVE_TOPIC_REG = new RegExp(/wechat\/[^\/]+\/receve\/sys/);
 
-export interface IWechatClient {
-    sendTxtMsg(content: string, target: string): Promise<any>;
-    getMe(): Promise<any>
-    onClose(): void
-    onMessage(): (data: any) => Promise<void>;
-    toWechatMessage(message: any): BaseWechatMessage;
-}
 
-export abstract class BaseWechatClient implements IWechatClient {
+export abstract class BaseWechatClient {
     protected config: IWechatConfig;
+    private msgSendQueue: {
+        reslove: any;
+        reject: any;
+    }[] = [];
 
     abstract toWechatMessage(message: any): BaseWechatMessage;
     abstract sendTxtMsg(content: string, target: string): Promise<any>;
     abstract getUserList(): Promise<IBaseContentMessage<IUserContent>>;
     abstract getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>>;
+    abstract getGroupUserNick(groupId: string, userId: string): Promise<IBaseContentMessage<IGroupUserNickContent>>; 
     abstract getMe(): Promise<any>;
     abstract onClose(): void;
     abstract onMessage(): (data: any) => Promise<void>;
-    abstract get mqttClient(): MqttClient
+    abstract get mqttClient(): MqttClient;
+
+    private async sendMessageWorker() {
+        console.log("消息处理线程已启动");
+        while (true) {
+            let item = this.msgSendQueue.shift();
+            item?.reslove();
+            await delay(3000);
+        }
+    }
 
     constructor(config: IWechatConfig) {
         this.config = config;
+        this.sendMessageWorker();
     }
 
     abstract connect(): Promise<void>;
@@ -60,11 +69,19 @@ export abstract class BaseWechatClient implements IWechatClient {
         this.registMqttMessageProcessor();
     }
 
-    private processSendMessage(wechatMessage: any) {
+    private async processSendMessage(wechatMessage: any) {
         let sendMessage = JSON.parse(wechatMessage.toString()) as IWechatMqttSendMessage;
         // TODO: 校验参数。
         if (sendMessage.msgType === WechatMessageTypeEnum.TEXT) {
-            this.sendTxtMsg(sendMessage.content, sendMessage.groupId ?? sendMessage.targetId ?? '');
+            let item: any = {};
+            let p = new Promise((resolve, reject) => {
+                item.reslove = resolve;
+                item.reject = reject;
+            }).then(() => {
+                return this.sendTxtMsg(sendMessage.content, sendMessage.groupId ?? sendMessage.targetId ?? '');
+            });
+            this.msgSendQueue.push(item);
+            return await p;
         }
     }
 
@@ -72,7 +89,7 @@ export abstract class BaseWechatClient implements IWechatClient {
         // 处理请求
         callSysMethod(this, request)
             .then((data) => {
-                let resp: ISysCallResponse = {
+                let resp: ISysCallResponse<any> = {
                     body: data,
                     params: undefined,
                     headers: undefined,
@@ -81,7 +98,7 @@ export abstract class BaseWechatClient implements IWechatClient {
                 }
                 this.mqttClient.publish(`wechat/${this.config.id}/receve/sys`, JSON.stringify(resp));
             }).catch((e: Error) => {
-                let resp: ISysCallResponse = {
+                let resp: ISysCallResponse<string> = {
                     body: e.message,
                     params: undefined,
                     headers: undefined,
@@ -92,7 +109,7 @@ export abstract class BaseWechatClient implements IWechatClient {
             });
     }
 
-    private processSysCallRecvMessage(response: ISysCallResponse) {
+    private processSysCallRecvMessage(response: ISysCallResponse<any>) {
         const requestId = response.requestId;
         const promise = getPromiseByRequestId(requestId);
         if (promise) {
@@ -106,7 +123,7 @@ export abstract class BaseWechatClient implements IWechatClient {
             if (SYS_CALL_MESSAGE_TOPIC_REG.exec(topic)) {
                 that.processSysCallMessage(JSON.parse(mqttMessage) as ISysCallRequest);
             } else if (SYS_CALL_MESSAGE_RECEVE_TOPIC_REG.exec(topic)) {
-                that.processSysCallRecvMessage(JSON.parse(mqttMessage) as ISysCallResponse);
+                that.processSysCallRecvMessage(JSON.parse(mqttMessage) as ISysCallResponse<any>);
             } else if (SEND_MESSAGE_TOPIC_REG.exec(topic)) {
                 that.processSendMessage(mqttMessage);
             }

@@ -24,28 +24,24 @@ const contentRegex = new RegExp(regex);
 class StableDiffusionService extends BaseWechatMessageProcessService {
     serviceCode: string = serviceCode;
 
-    private _service;
-    private _config: IStableDiffusionConfig;
+    private readonly requestService;
+    private readonly sendMessageService: AxiosInstance;
 
-    private sendService: AxiosInstance;
-
-    get config(): IStableDiffusionConfig { return this._config };
-    get service(): AxiosInstance { return this._service };
     constructor(clientConfig: IWechatConfig, config: IStableDiffusionConfig) {
         super(clientConfig, config);
-        this._service = StableDiffusionServiceFactory.createService(config.stableService);
-        this.sendService = ImageSendServiceFactory.createService(config.imageService);
-        this._config = config;
+        this.requestService = StableDiffusionServiceFactory.createService(config.stableService);
+        this.sendMessageService = ImageSendServiceFactory.createService(config.imageService);
     }
 
     async canProcess(message: BaseWechatMessage): Promise<boolean> {
+        let config = this.config as IStableDiffusionConfig;
         if (typeof message.content !== 'string') {
             return false;
         }
         // 处理单聊的情况
         if (message.groupId === null) {
             // 过滤用户
-            if (this.config.singleContactWhiteList !== undefined && this.config.singleContactWhiteList.indexOf(message.senderId) < 0) {
+            if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.indexOf(message.senderId) < 0) {
                 return false;
             }
             let result = contentRegex.exec(message.content);
@@ -55,7 +51,7 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
             return true;
         }
         // 是否在接入的 roomId 中有
-        if (this.config.attachedRoomId.indexOf(message.groupId) < 0) {
+        if (config.attachedRoomId.indexOf(message.groupId) < 0) {
             return false;
         }
         // 不是 @ 我
@@ -89,14 +85,14 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
             negative_prompt: negativePrompt,
             steps: 30
         }
-        let imageResult = await this.service.post<IStableDiffusionResponse>("/sdapi/v1/txt2img", data)
+        let imageResult = await this.requestService.post<IStableDiffusionResponse>("/sdapi/v1/txt2img", data)
             .then(res => res.data)
             .catch(() => {});
         if (imageResult === undefined || imageResult === null || imageResult.images[0] === undefined) {
             return "图片请求失败！请重试";
         }
         let base64 = imageResult.images[0]
-        this.sendService.post("/base64", {
+        this.sendMessageService.post("/base64", {
             wxid: target,
             type: "png",
             data: base64
@@ -112,9 +108,9 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
         return '使用 “AI画图 正向标签\n逆向标签”'
     }
 
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
-        topicList.push(...this.config.attachedRoomId.map(roomId => {
+        topicList.push(...(this.config as IStableDiffusionConfig).attachedRoomId.map(roomId => {
             return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {

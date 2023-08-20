@@ -55,7 +55,7 @@ class NewspaperService extends BaseWechatMessageProcessService {
     getUseage(): string {
         return "回复关键字 新闻"
     }
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
             return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`

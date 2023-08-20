@@ -12,41 +12,25 @@ const keyword = 'sys'
 const regex = `${ keyword }\\s+([\\s\\S]+)`;
 const contentRegex = new RegExp(regex);
 
-// let configList: ISystemConfig[];
-
-// try {
-//     configList = config.get("modules.system") as ISystemConfig[];
-// } catch(error) {
-//     console.warn("获取模块配置 modules.system 出错！")
-//     throw error;
-// }
-
 class SystemService extends BaseWechatMessageProcessService {
-    service: undefined;
-    serviceCode: string = serviceCode;
-
-    private _config: ISystemConfig;
-
-    get config(): ISystemConfig { return this._config };
-    constructor(clientConfig: IWechatConfig, config: ISystemConfig) {
-        super(clientConfig, config);
-        this._config = config;
-    }
+    
+    public readonly serviceCode: string = serviceCode;
 
     async canProcess(message: BaseWechatMessage): Promise<boolean> {
+        let config = this.config as ISystemConfig;
         if (typeof message.content !== 'string') {
             return false;
         }
         // 处理单聊的情况
         if (message.groupId === null) {
             // 过滤用户
-            if (this.config.singleContactWhiteList !== undefined && this.config.singleContactWhiteList.indexOf(message.senderId) < 0) {
+            if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.indexOf(message.senderId) < 0) {
                 return false;
             }
             return message.content.trim().substring(0, keyword.length) === keyword;
         }
         // 是否在接入的 roomId 中有
-        if (this.config.attachedRoomId.indexOf(message.groupId) < 0) {
+        if (config.attachedRoomId.indexOf(message.groupId) < 0) {
             return false;
         }
         // 不是 @ 我

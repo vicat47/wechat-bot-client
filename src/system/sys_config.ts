@@ -5,7 +5,7 @@ import { SysClient } from "../entity/SysClient";
 import { SysConfig } from "../entity/SysConfig";
 import { SysModule } from "../entity/SysModule";
 import { SysModuleConfig } from "../entity/SysModuleConfig";
-import { asEnum } from "../utils/tool";
+import { asEnum, mergeDeep } from "../utils/tool";
 
 const configRepository = AppDataSource.getRepository(SysConfig);
 const moduleRepository = AppDataSource.getRepository(SysModule);
@@ -16,6 +16,11 @@ enum ConfigType {
     JSON = 'json',
     String = 'string',
     Number = 'number',
+}
+
+export enum EnableStatus {
+    ENABLE = '1',
+    DISABLE = '0',
 }
 
 const ConfigTypeProcessor = {
@@ -75,6 +80,7 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
                 userId: options.userId,
                 groupId: options.groupId,
                 key: k,
+                enable: EnableStatus.ENABLE,
             }
         }).catch(e => Promise.resolve(undefined));
     }))).reduce((acc, curr) => {
@@ -92,6 +98,7 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
             conf.userId = options.userId as any;
             conf.groupId = options.groupId as any;
             conf.key = k;
+            conf.enable = EnableStatus.ENABLE;
             let value = options.configs[k];
             if (typeof value === 'string') {
                 conf.value = value;
@@ -109,11 +116,52 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
 }
 
 /**
- * 通过 clientId 和 moduleId 获取配置文件的方法。
+ * 通过 clientId 和 options 获取所有模块配置列表的接口
+ * @param clientId 客户端 ID
+ * @param options 参数
+ * @returns 返回获取的模块列表
+ */
+export async function getClientModuleConfig(clientId: string, options?: IClientConfigOption): Promise<SysModule[]> {
+    let moduleConfigList = await moduleRepository.find({
+        relations: {
+            configs: true
+        },
+        where: {
+            enable: EnableStatus.ENABLE,
+            clientId: clientId,
+            moduleCode: options?.moduleCode,
+            configs: {
+                enable: EnableStatus.ENABLE,
+                key: options?.keys === undefined ? undefined: In(options.keys),
+            },
+        }
+    });
+    return moduleConfigList;
+}
+
+interface ISysModuleObjectConfig extends SysModule {
+    configObject: any;
+}
+
+export async function getClientModuleGlobalConfig(clientId: string, options?: IClientConfigOption): Promise<ISysModuleObjectConfig[]> {
+    let moduleConfigList = await getClientModuleConfig(clientId, options) as ISysModuleObjectConfig[];
+    for (let moduleConfig of moduleConfigList) {
+        moduleConfig.configObject = generateModuleConfig(moduleConfig.configs);
+    }
+    return moduleConfigList;
+}
+
+/**
+ * 通过 moduleId 获取配置文件的方法。
  *  用户+群组ID 都为 null 的为模块默认配置
  *  用户 != null 群组 == null 为用户配置
  *  用户 == null 群组 != null 为群配置
  *  用户 != null 群组 != null 为群内用户配置。默认都应该取得群内用户配置。
+ *  全局配置  => 用户 = null, 群 = null
+ *    单聊配置 => 用户 != null, 群 = null
+ *      返回
+ *    群聊配置 => 用户 = null, 群 != null
+ *      群中用户配置 => 用户 != null, 群 != null
  * @param clientId 微信客户端ID
  * @param options 配置项
  *  moduleCode 模块的 Code
@@ -122,37 +170,24 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
  *  key 要查的 key
  * @returns 
  */
-export async function getClientModuleConfig(clientId: string, options?: IClientConfigOption): Promise<IModuleConfig> {
-    let moduleConfigList = await moduleConfigRepository.find({
-        relations: {
-            sysModule: true,
-        },
-        where: {
-            key: options?.keys === undefined ? undefined: In(options.keys),
-            sysModule: {
-                enable: '1',
-                clientId: clientId,
-                moduleCode: options?.moduleCode,
-            }
-        }
-    });
-    return generateModuleConfig(moduleConfigList, options);
-}
-
 export async function getModuleConfig(moduleId: string, options?: IBaseClientGetConfigOption): Promise<any> {
-    let moduleConfigList = await moduleConfigRepository.find({
+    let moduleConfig = await moduleRepository.findOne({
         relations: {
-            sysModule: true,
+            configs: true,
         },
         where: {
-            key: options?.keys === undefined ? undefined: In(options.keys),
-            sysModule: {
-                enable: '1',
-                id: moduleId,
+            enable: EnableStatus.ENABLE,
+            id: moduleId,
+            configs: {
+                enable: EnableStatus.ENABLE,
+                key: options?.keys === undefined ? undefined: In(options.keys),
             }
         }
     });
-    let cfg = generateModuleConfig(moduleConfigList, options)[moduleId] as {
+    if (moduleConfig === undefined || moduleConfig === null) {
+        return undefined;
+    }
+    let cfg = generateModuleConfig(moduleConfig.configs, options)[moduleId] as {
         [k: string]: any
     };
     return cfg;
@@ -160,6 +195,11 @@ export async function getModuleConfig(moduleId: string, options?: IBaseClientGet
 
 function generateModuleConfig(moduleConfigList: SysModuleConfig[], options?: IBaseClientGetConfigOption) {
     let moduleConfig: IModuleConfig = {}
+    // 全局配置
+    if (options === undefined) {
+        moduleConfigList.forEach(item => updateByKeyLevel(moduleConfig, item));
+        return moduleConfig;
+    }
     moduleConfigList
         .filter(c => c.userId === null && c.groupId === null)
         .forEach(item => updateByKeyLevel(moduleConfig, item));
@@ -167,15 +207,17 @@ function generateModuleConfig(moduleConfigList: SysModuleConfig[], options?: IBa
         return moduleConfig;
     }
 
+    // 单聊配置
     if (options?.userId !== undefined && options?.groupId === undefined) {
         // 用户配置
         moduleConfigList
-            .filter(c => c.userId !== null && c.groupId === null)
+            .filter(c => c.userId !== null && c.userId === options.userId && c.groupId === null)
             .forEach(item => updateByKeyLevel(moduleConfig, item));
         return moduleConfig;
     }
+
     moduleConfigList
-        .filter(c => c.userId === null && c.groupId !== null)
+        .filter(c => c.userId === null && c.groupId !== null && c.groupId === options.groupId)
         .forEach(item => updateByKeyLevel(moduleConfig, item));
     if (options?.userId === undefined && options?.groupId !== undefined) {
         // 群配置
@@ -183,7 +225,7 @@ function generateModuleConfig(moduleConfigList: SysModuleConfig[], options?: IBa
     } else if (options?.userId !== undefined && options?.groupId !== undefined) {
         // 群内用户配置
         moduleConfigList
-            .filter(c => c.userId !== null && c.groupId !== null)
+            .filter(c => c.userId !== null && c.userId === options.userId && c.groupId !== null && c.groupId === options.groupId)
             .forEach(item => updateByKeyLevel(moduleConfig, item));
     } else {
         throw new Error("get config failure");
@@ -197,8 +239,8 @@ function generateModuleConfig(moduleConfigList: SysModuleConfig[], options?: IBa
  * @param conf 配置
  */
 function updateByKeyLevel(target: IModuleConfig, conf: SysModuleConfig) {
-    if (target[conf.sysModule.id] === undefined) {
-        target[conf.sysModule.id] = {};
+    if (target[conf.sysModuleId] === undefined) {
+        target[conf.sysModuleId] = {};
     }
     let value = ConfigTypeProcessor[asEnum(ConfigType, conf.type as any)](conf.value);
     let keys = conf.key.split('.').filter(k => k.trim().length > 0);
@@ -210,5 +252,5 @@ function updateByKeyLevel(target: IModuleConfig, conf: SysModuleConfig) {
             layerLast = { [keys[i]]: layerLast };
         }
     }
-    Object.assign(target[conf.sysModule.id], layerLast);
+    target[conf.sysModuleId] = mergeDeep(target[conf.sysModuleId], layerLast);
 }

@@ -21,20 +21,16 @@ export const serviceCode = path.basename(__dirname);
 
 
 class HomeAssistantService extends BaseWechatMessageProcessService {
-    serviceCode: string = serviceCode;
-    private _service;
-    private _config;
-    get config(): IHomeAssistantConfig { return this._config };
-    get service(): AxiosInstance { return this._service };
+    public readonly serviceCode: string = serviceCode;
+    private readonly service;
     constructor(clientConfig: IWechatConfig, config: IHomeAssistantConfig) {
         super(clientConfig, config);
-        this._config = config;
-        this._service = serviceFactory.createService(config);
+        this.service = serviceFactory.createService(config);
     }
 
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
-        topicList.push(...this.config.attachedRoomId.map(roomId => {
+        topicList.push(...(this.config as IHomeAssistantConfig).attachedRoomId.map(roomId => {
             return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
@@ -60,15 +56,15 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
         let receivedMsg = message.content as string;
         receivedMsg = receivedMsg.replace(`@${getClientName(this.clientId)} `, '').trim();
         if (receivedMsg === '空气质量') {
-            let deviceId = this.config.sensor.find(sensor => sensor.type === HomeAssistantSensorType.PM25)?.device_id
+            let deviceId = (this.config as IHomeAssistantConfig).sensor.find(sensor => sensor.type === HomeAssistantSensorType.PM25)?.device_id
             return await this.getPM25DataAsMsg(deviceId ?? '');
         }
         if (receivedMsg === '湿度') {
-            let deviceId = this.config.sensor.find(sensor => sensor.type === HomeAssistantSensorType.HUMIDITY)?.device_id
+            let deviceId = (this.config as IHomeAssistantConfig).sensor.find(sensor => sensor.type === HomeAssistantSensorType.HUMIDITY)?.device_id
             return await this.getHumidityDataAsMsg(deviceId ?? '');
         }
         if (receivedMsg === '温度') {
-            let deviceId = this.config.sensor.find(sensor => sensor.type === HomeAssistantSensorType.TEMPERATURE)?.device_id
+            let deviceId = (this.config as IHomeAssistantConfig).sensor.find(sensor => sensor.type === HomeAssistantSensorType.TEMPERATURE)?.device_id
             return await this.getTemperatureDataAsMsg(deviceId ?? '');
         }
         return null;
@@ -82,7 +78,7 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
     
     async getPM25Data(deviceId: string) {
         try {
-            const res = await this.service.get<IHomeAssistantState<IPM25Attribute>>(`${this.config.statePath}${deviceId}`);
+            const res = await this.service.get<IHomeAssistantState<IPM25Attribute>>(`${(this.config as IHomeAssistantConfig).statePath}${deviceId}`);
             return await Promise.resolve(res.data);
         } catch {
             return await Promise.reject(new Error('获取PM2.5信息异常！'));
@@ -94,7 +90,7 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
      */
     async getTemperatureData(deviceId: string) {
         try {
-            const res = await this.service.get<IHomeAssistantState<ITemperatureAttribute>>(`${this.config.statePath}${deviceId}`);
+            const res = await this.service.get<IHomeAssistantState<ITemperatureAttribute>>(`${(this.config as IHomeAssistantConfig).statePath}${deviceId}`);
             return await Promise.resolve(res.data);
         } catch {
             return await Promise.reject(new Error('获取温度信息异常！'));
@@ -106,7 +102,7 @@ class HomeAssistantService extends BaseWechatMessageProcessService {
      */
     async getHumidityData(deviceId: string) {
         try {
-            const res = await this.service.get<IHomeAssistantState<IHumidityAttribute>>(`${this.config.statePath}${deviceId}`);
+            const res = await this.service.get<IHomeAssistantState<IHumidityAttribute>>(`${(this.config as IHomeAssistantConfig).statePath}${deviceId}`);
             return await Promise.resolve(res.data);
         } catch {
             return await Promise.reject(new Error('获取湿度信息异常！'));

@@ -19,6 +19,8 @@ export class SysModuleConfig {
     type!: string;
     @Column("time with time zone", {name: "create_time"})
     createTime!: string;
+    @Column()
+    enable!: string;
     @ManyToOne(() => SysModule, (module) => module.configs, {
         createForeignKeyConstraints: false,
     })

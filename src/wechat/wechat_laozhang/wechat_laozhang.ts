@@ -63,6 +63,13 @@ class WeChatMessage {
     static group_user_list(): WeChatMessage {
         return new WeChatMessage(WechatMessageType.CHATROOM_MEMBER);
     }
+
+    static group_user_nick(groupId: string, userId: string): WeChatMessage {
+        const msg = new WeChatMessage(WechatMessageType.CHATROOM_MEMBER_NICK);
+        msg.roomid = groupId;
+        msg.wxid = userId;
+        return msg;
+    }
 }
 
 type WechatMsgContentType = string | any[] | XMLMessageContent

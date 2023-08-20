@@ -4,16 +4,18 @@
 
 ## 功能列表
 
+详细配置请看各模块目录下 `README.md`
+
 | 标题 | 简介 | 用法 | 默认状态<br/>🚫✅ | 文件目录 |
 | ---  | ---- | --- | --- | ------- | 
-| chat_glm_6b | 本地部署 chat_glm，并通过http 接口调用 | ai 传递给 chatglm 的内容 | 🚫 | `modules/chat_glm_6b` |
-| chat_gpt_api | 调用 chat_gpt_api，询问 ai 内容（需配置gpt密钥，科学上网） | ai 传递给 chatgpt 的内容 | ✅ | `modules/chat_gpt_api` |
+| ai_chat | 多种实现，多种渠道的 ai 对话机器人，包含百度文心一言、chatgpt | ai 传递给 ai 的内容 | 🚫 | `modules/ai_chat` |
 | dingdong | dingdong bot，给机器人发 ding，机器人返回 dong | 仅管理员可用。 | ✅ | `modules/dingdong` |
-| homeassistant | homeassistant 服务，调用本地的某些服务 | 请参考模块内容进行重写 | ✅ | `modules/homeassistant` |
+| homeassistant | homeassistant 服务，调用本地的某些服务 | 请参考模块内容进行重写 | 🚫 | `modules/homeassistant` |
 | jenkins | jenkins 自动构建服务，可以通过发送聊天触发构建项目 | jenkins构建 项目名称 | 🚫 | `modules/jenkins` |
 | newspaper | 通过调用服务获取每日新闻 | 新闻 | 🚫 | `modules/newspaper` |
 | stable_diffusion | 通过调用本地部署的 stable_diffusion 进行 ai 绘图，依赖另一个图片转发的项目 | AI画图 正向标签\\n逆向标签 | 🚫 | `modules/stable_diffusion` |
 | weather | 通过调用魅族的天气服务获取天气信息 | 天气 | 🚫 | `modules/weather` |
+| watchdog | 看门狗机器人，可以定义监听群消息规则，并转发给指定目标 | 监听指定消息 | ✅ | `modules/watchdog` |
 
 ## Useage
 
@@ -36,8 +38,7 @@ src
 ├─ system                  # 系统相关指令，以及数据库操作
 ├─ config.ts
 ├─ modules                 # 各种模块
-│    ├─ chat_glm_6b        # glm 模块
-│    ├─ chat_gpt_api       # gpt 模块
+│    ├─ ai_chat            # 大语言模型模块
 │    ├─ dingdong           # dingdong 机器人，发 ding 回 dong
 │    ├─ fishtouch          # 摸鱼机器人，发摸鱼回复摸鱼
 │    ├─ homeassistant      # homeassistant 机器人，调用 ha 机器人
@@ -50,6 +51,7 @@ src
 │    │    ├─ disabled.ts   ## 如果目录下有该文件，代表该模块不会被加载
 │    │    ├─ request.ts    ## 调用API设计
 │    │    └─ service.ts    ## 服务本体设计
+│    ├─ watchdog           # 看门狗机器人，将订阅群内指定消息并转发到别处
 │    └─ weather            # 天气播报功能，播报每日天气
 ├─ utils
 └─ wechat                  # 微信基础实现
@@ -87,4 +89,8 @@ src
 # TODOS
 - [x] 更改服务导入方式，改为导入 service 类并通过代码初始化
 - [ ] 为必要的db 操作加入缓存操作。
-- [ ] 
+
+
+# 问题
+
+多条消息会丢失

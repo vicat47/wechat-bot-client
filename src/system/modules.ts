@@ -1,7 +1,7 @@
 import Ajv from "ajv";
 import { IWechatConfig } from "../config";
 import { BaseWechatMessageProcessService } from "../wechat/base_wechat";
-import { getClientModuleConfig, getSysClientById } from "./sys_config";
+import { getClientModuleGlobalConfig, getSysClientById } from "./sys_config";
 
 const ajv = new Ajv()
 
@@ -25,19 +25,23 @@ export async function registryModuleServices<T extends BaseWechatMessageProcessS
         let errorMessage = sysModuleValidate.errors?.map(item => item.message).join('\n');
         throw new Error(`module validate not pass...${errorMessage}`);
     }
-    let config = await getClientModuleConfig(clientId, {
-        moduleCode: module.serviceCode
+    let moduleConfigList = await getClientModuleGlobalConfig(clientId, {
+        moduleCode: module.serviceCode,
     });
     let serviceList = [];
     let client = await getSysClientById(clientId);
     if (client === null) {
         throw new Error("sys client id not exists");
     }
-    for (let serviceId in config) {
-        let conf = config[serviceId];
-        conf.id = serviceId;
-        serviceList.push(module.register(client, config[serviceId]));
-        console.log(`服务 ${module.serviceCode}: ${ serviceId } 已初始化，已加载`);
+    for (let moduleConfig of moduleConfigList) {
+        let conf = moduleConfig.configObject[moduleConfig.id];
+        if (conf === undefined) {
+            // 处理没有具体模块配置项的模块
+            conf = {};
+        }
+        conf.id = moduleConfig.id.toString();
+        serviceList.push(module.register(client, conf));
+        console.log(`服务 ${module.serviceCode}: ${ moduleConfig.id } 已初始化，已加载`);
     }
     return serviceList;
 }

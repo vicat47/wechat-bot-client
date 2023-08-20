@@ -12,7 +12,7 @@
  Target Server Version : 140007
  File Encoding         : 65001
 
- Date: 07/08/2023 21:47:34
+ Date: 21/08/2023 00:37:13
 */
 
 
@@ -61,6 +61,17 @@ START 1
 CACHE 1;
 
 -- ----------------------------
+-- Sequence structure for sys_module_permission_id_seq
+-- ----------------------------
+DROP SEQUENCE IF EXISTS "public"."sys_module_permission_id_seq";
+CREATE SEQUENCE "public"."sys_module_permission_id_seq" 
+INCREMENT 1
+MINVALUE  1
+MAXVALUE 9223372036854775807
+START 1
+CACHE 2;
+
+-- ----------------------------
 -- Sequence structure for sys_user_group_id_seq
 -- ----------------------------
 DROP SEQUENCE IF EXISTS "public"."sys_user_group_id_seq";
@@ -96,6 +107,11 @@ COMMENT ON COLUMN "public"."sys_client"."client_type" IS '客户端类型
 1：com';
 
 -- ----------------------------
+-- Records of sys_client
+-- ----------------------------
+INSERT INTO "public"."sys_client" VALUES ('test123123', 'http://127.0.0.1:5555', 'ws://127.0.0.1:5555', 'mqtt://127.0.0.1:9002', '管理员', '2023-07-21 16:03:26.572219+00', '0');
+
+-- ----------------------------
 -- Table structure for sys_config
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."sys_config";
@@ -118,7 +134,7 @@ COMMENT ON COLUMN "public"."sys_config"."create_time" IS '创建时间';
 -- ----------------------------
 -- Records of sys_config
 -- ----------------------------
-INSERT INTO "public"."sys_config" VALUES (1, '管理员', 'sys.admin', 'test_123123', 'string', '2023-08-04 17:50:42.585776+00');
+INSERT INTO "public"."sys_config" VALUES (1, '管理员', 'sys.admin', 'test123123', 'string', '2023-08-04 17:50:42.585776+00');
 
 -- ----------------------------
 -- Table structure for sys_group
@@ -163,6 +179,13 @@ COMMENT ON COLUMN "public"."sys_module"."priority" IS '优先级';
 COMMENT ON COLUMN "public"."sys_module"."enable" IS '0: 禁用；1: 启用';
 
 -- ----------------------------
+-- Records of sys_module
+-- ----------------------------
+INSERT INTO "public"."sys_module" VALUES (2, 'system_service', 'system', '2023-08-02 08:51:15.47161+00', 'system', 'wxid_test123123', '0', NULL, '1');
+INSERT INTO "public"."sys_module" VALUES (1, 'ai_chat_local', 'ai_chat_key', '2023-07-19 15:50:34.902145+00', 'ai_chat', 'wxid_test123123', '0', NULL, '1');
+INSERT INTO "public"."sys_module" VALUES (3, 'watchdog', 'watchdog', '2023-08-17 07:32:53.56678+00', 'watchdog', 'wxid_test123123', '0', NULL, '1');
+
+-- ----------------------------
 -- Table structure for sys_module_config
 -- ----------------------------
 DROP TABLE IF EXISTS "public"."sys_module_config";
@@ -174,7 +197,8 @@ CREATE TABLE "public"."sys_module_config" (
   "user_id" varchar(32) COLLATE "pg_catalog"."default",
   "group_id" varchar(32) COLLATE "pg_catalog"."default",
   "create_time" timestamptz(6) DEFAULT clock_timestamp(),
-  "type" varchar(20) COLLATE "pg_catalog"."default"
+  "type" varchar(20) COLLATE "pg_catalog"."default",
+  "enable" char(1) COLLATE "pg_catalog"."default" DEFAULT 1
 )
 ;
 COMMENT ON COLUMN "public"."sys_module_config"."id" IS 'id';
@@ -185,11 +209,23 @@ COMMENT ON COLUMN "public"."sys_module_config"."user_id" IS '用户ID';
 COMMENT ON COLUMN "public"."sys_module_config"."group_id" IS '群组ID';
 COMMENT ON COLUMN "public"."sys_module_config"."create_time" IS '创建时间';
 COMMENT ON COLUMN "public"."sys_module_config"."type" IS '配置类型';
+COMMENT ON COLUMN "public"."sys_module_config"."enable" IS '0: 禁用；1: 启用';
 
 -- ----------------------------
 -- Records of sys_module_config
 -- ----------------------------
-INSERT INTO "public"."sys_module_config" VALUES (1, 1, 'modulePrice', '{"gpt-3.5-turbo-0301_output":0.002,"gpt-3.5-turbo-0301_input":0.0015,"gpt-3.5-turbo-0613_input":0.0015,"gpt-3.5-turbo-0613_output":0.002,"gpt-3.5-turbo_output":0.002,"gpt-3.5-turbo_input":0.0015,"gpt-3.5-turbo-16k-0613_output":0.003,"gpt-3.5-turbo-16k-0613_input":0.004,"gpt-3.5-turbo-16k_output":0.003,"gpt-3.5-turbo-16k_input":0.004}', NULL, NULL, '2023-08-07 10:49:44.994436+00', 'json');
+INSERT INTO "public"."sys_module_config" VALUES (1, 1, 'memory', '6', NULL, NULL, '2023-07-23 08:17:42.483202+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (2, 2, 'singleContactWhiteList', '["wxid_test123123"]', NULL, NULL, '2023-08-02 08:52:15.100732+00', 'json', '1');
+INSERT INTO "public"."sys_module_config" VALUES (3, 1, 'datasource', '{"type":"postgres","host":"127.0.0.1","port":5432,"schema":"public","username":"postgres","password":"postgres","database":"wechat_bot"}', NULL, NULL, '2023-08-06 15:25:50.780606+00', 'json', '1');
+INSERT INTO "public"."sys_module_config" VALUES (4, 1, 'chatGpt.modulePrice', '{"gpt-3.5-turbo-0301_output":0.002,"gpt-3.5-turbo-0301_input":0.0015,"gpt-3.5-turbo-0613_input":0.0015,"gpt-3.5-turbo-0613_output":0.002,"gpt-3.5-turbo_output":0.002,"gpt-3.5-turbo_input":0.0015,"gpt-3.5-turbo-16k-0613_output":0.003,"gpt-3.5-turbo-16k-0613_input":0.004,"gpt-3.5-turbo-16k_output":0.003,"gpt-3.5-turbo-16k_input":0.004}', NULL, NULL, '2023-08-07 10:49:44.994436+00', 'json', '1');
+INSERT INTO "public"."sys_module_config" VALUES (5, 1, 'chatGpt.module', 'gpt-3.5-turbo', NULL, NULL, '2023-07-21 17:27:34.525766+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (6, 1, 'chatGpt.proxy', '{"protocol":"http","host":"127.0.0.1","port":7890}', NULL, NULL, '2023-07-19 15:57:07.932138+00', 'json', '1');
+INSERT INTO "public"."sys_module_config" VALUES (7, 1, 'chatGpt.auth', '{"type":"bearer", "token":"sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxx"}', NULL, NULL, '2023-07-19 15:54:50.590098+00', 'json', '1');
+INSERT INTO "public"."sys_module_config" VALUES (8, 1, 'chatGpt.baseUrl', 'https://api.openai.com/v1/chat/completions', NULL, NULL, '2023-07-19 15:53:48.5697+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (9, 1, 'baiduThousandSails.baseUrl', 'https://aip.baidubce.com', NULL, NULL, '2023-08-16 15:28:34.345059+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (10, 1, 'baiduThousandSails.apiKey', 'xxxxxxxxxxxxxxxxxxxxxxx', NULL, NULL, '2023-08-16 15:48:34.422448+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (11, 1, 'baiduThousandSails.clientSecret', 'xxxxxxxxxxxxxxxxxxxxxxxxx', NULL, NULL, '2023-08-16 15:48:55.081645+00', 'string', '1');
+INSERT INTO "public"."sys_module_config" VALUES (12, 1, 'moduleType', 'baiduThousandSails', NULL, NULL, '2023-08-16 15:54:16.417295+00', 'string', '1');
 
 -- ----------------------------
 -- Table structure for sys_module_permission
@@ -248,20 +284,22 @@ CREATE TABLE "public"."sys_user_group" (
   "id" int4 NOT NULL DEFAULT nextval('sys_user_group_id_seq'::regclass),
   "user_id" varchar(30) COLLATE "pg_catalog"."default",
   "group_id" varchar(30) COLLATE "pg_catalog"."default",
-  "create_time" timestamptz(6) DEFAULT clock_timestamp()
+  "create_time" timestamptz(6) DEFAULT clock_timestamp(),
+  "nick_name" varchar(50) COLLATE "pg_catalog"."default"
 )
 ;
 COMMENT ON COLUMN "public"."sys_user_group"."id" IS 'id';
 COMMENT ON COLUMN "public"."sys_user_group"."user_id" IS '用户ID';
 COMMENT ON COLUMN "public"."sys_user_group"."group_id" IS '群ID';
 COMMENT ON COLUMN "public"."sys_user_group"."create_time" IS '时间';
+COMMENT ON COLUMN "public"."sys_user_group"."nick_name" IS '昵称';
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "public"."module_config_id_seq"
 OWNED BY "public"."sys_module_config"."id";
-SELECT setval('"public"."module_config_id_seq"', 1, true);
+SELECT setval('"public"."module_config_id_seq"', 13, true);
 
 -- ----------------------------
 -- Alter sequences owned by
@@ -273,14 +311,14 @@ SELECT setval('"public"."sys_client_id_seq"', 1, true);
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
-SELECT setval('"public"."sys_config_id_seq"', 1, true);
+SELECT setval('"public"."sys_config_id_seq"', 2, true);
 
 -- ----------------------------
 -- Alter sequences owned by
 -- ----------------------------
 ALTER SEQUENCE "public"."sys_module_id_seq"
 OWNED BY "public"."sys_module"."id";
-SELECT setval('"public"."sys_module_id_seq"', 1, true);
+SELECT setval('"public"."sys_module_id_seq"', 4, true);
 
 -- ----------------------------
 -- Alter sequences owned by

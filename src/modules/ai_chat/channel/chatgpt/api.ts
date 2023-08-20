@@ -1,3 +1,5 @@
+import { IMessage } from "../../lib"
+
 export interface IChatGPTReply {
     id: string
     object: string
@@ -23,11 +25,6 @@ export interface IChoice {
     message: IMessage
     finish_reason: string
     index: number
-}
-
-export interface IMessage {
-    role: string
-    content: string
 }
 
 export interface IChatHistoryHolder {

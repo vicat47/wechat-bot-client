@@ -80,7 +80,6 @@ function getRandomIntInclusive(min: number, max: number): number {
 class WeatherService extends BaseWechatMessageProcessService {
     private _config: IWeatherConfig;
 
-    get config(): IWeatherConfig { return this._config };
     service?: AxiosInstance;
     serviceCode: string = serviceCode;
     constructor(clientConfig: IWechatConfig, config: IWeatherConfig) {
@@ -91,7 +90,7 @@ class WeatherService extends BaseWechatMessageProcessService {
         return this.simpleMessageProcessorTest(message, ['天气']);
     }
     async replyMessage(message: base_wechat): Promise<string | null> {
-        const { content, name, level, temp, sendibleTemp, wea, wD, wS } = await getWeatherInfo(this.config.baseUrl, this.config.cityId);
+        const { content, name, level, temp, sendibleTemp, wea, wD, wS } = await getWeatherInfo((this.config as IWeatherConfig).baseUrl, (this.config as  IWeatherConfig).cityId);
         return `🌟当前温度：${temp} ℃
 🌡️体感温度：${sendibleTemp} ℃
 ☁️气候：${wea}
@@ -105,7 +104,7 @@ ${content}
     getUseage(): string {
         return "回复关键字 天气"
     }
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
         topicList.push(`wechat/${ this.clientId }/receve/groups/#`);
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
@@ -115,7 +114,7 @@ ${content}
     }
     
     async triggerSchedule(): Promise<string | null> {
-        const { weathers, content, temp } = await getWeatherInfo(this.config.baseUrl, this.config.cityId);
+        const { weathers, content, temp } = await getWeatherInfo((this.config as IWeatherConfig).baseUrl, (this.config as IWeatherConfig).cityId);
         const today = weathers[0];
         return `☀️早上好！
 🍁今天是${today.date} ${today.week}

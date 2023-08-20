@@ -1,4 +1,4 @@
-import { Column, DataSource, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity({
     name: "mod_chat_gpt_api_model_request"

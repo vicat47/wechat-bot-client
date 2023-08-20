@@ -9,6 +9,58 @@ const groupRepo = AppDataSource.getRepository(SysGroup);
 const userRepo = AppDataSource.getRepository(SysUser);
 const userGroupRepo = AppDataSource.getRepository(SysUserGroup);
 
+export async function getNickById(client: BaseWechatClient, options: {
+    userId?: string,
+    groupId?: string,
+}): Promise<string|undefined> {
+    let name;
+    if (options.groupId && options.userId) {
+        // 群中用户
+        let groupUser = await userGroupRepo.findOne({
+            cache: true,
+            where: {
+                userId: options.userId,
+                groupId: options.groupId,
+            }
+        });
+        name = groupUser?.nickName;
+        if (name === undefined || name === null) {
+            const userNick = await client.getGroupUserNick(options.groupId, options.userId);
+            let saveGroupUser = new SysUserGroup();
+            if (groupUser?.id) {
+                saveGroupUser.id = groupUser.id;
+            }
+            saveGroupUser.nickName = (userNick.content as any).nick;
+            saveGroupUser.userId = options.userId;
+            saveGroupUser.groupId = options.groupId;
+            userGroupRepo.save(saveGroupUser);
+            return saveGroupUser.nickName;
+        }
+        return name;
+    }
+    if (options.groupId && options.userId && (name === undefined || name === null)) {
+        // 群中没查到昵称，查用户
+        let user = await userRepo.findOne({
+            cache: true,
+            where: {
+                id: options.userId,
+            }
+        });
+        return user?.nickName ?? user?.name;
+    }
+    if ((options.userId === undefined || options.userId === null) && options.groupId) {
+        // 群名称
+        let group = await groupRepo.findOne({
+            cache: true,
+            where: {
+                id: options.groupId,
+            }
+        });
+        return group?.name ?? undefined;
+    }
+    return undefined;
+}
+
 /**
  * 同步用户列表
  * @param client 客户端连接
@@ -77,4 +129,11 @@ export async function syncGroupUser(client: BaseWechatClient): Promise<SysUserGr
             })
         );
     return userGroupRepo.save(saveUserGroups);
+}
+
+/**
+ * 更新群中用户昵称
+ */
+async function updateGroupUserNick(client: BaseWechatClient, groupId?: string | string[]) {
+    // TODO: 更新群中用户昵称
 }

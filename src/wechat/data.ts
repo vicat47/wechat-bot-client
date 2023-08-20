@@ -24,3 +24,12 @@ export interface IGroupUserContent {
 	member: string[];
 	room_id: string;
 }
+
+/**
+ * 群用户昵称
+ */
+export interface IGroupUserNickContent {
+	nick: string;
+	roomid: string;
+	wxid: string;
+}

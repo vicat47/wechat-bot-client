@@ -1,4 +1,3 @@
-import { AxiosInstance } from "axios"
 import * as mqtt from 'mqtt';
 import { WechatXMLMessage } from "./xml_message"
 import config from "config";
@@ -10,6 +9,33 @@ import { globalClient } from "../app";
 
 export const chatroomRegex = new RegExp(/^\d{4,15}@chatroom$/);
 export const subscriptionRegex = new RegExp(/^gh_\w{4,15}$/);
+
+export enum WechatIdTypeEnum {
+    GROUP_ID,
+    USER_ID,
+    SUBSCRIPTION_ID,
+}
+
+export function getIdType(id: string) {
+    if (chatroomRegex.test(id)) {
+        // 群
+        return WechatIdTypeEnum.GROUP_ID;
+    } else if (subscriptionRegex.test(id)) {
+        // 公众号
+        return WechatIdTypeEnum.SUBSCRIPTION_ID;
+    } else {
+        // 人
+        return WechatIdTypeEnum.USER_ID;
+    }
+}
+
+export function isUser(id: string) {
+    return getIdType(id) === WechatIdTypeEnum.USER_ID;
+}
+
+export function isGroup(id: string) {
+    return getIdType(id) === WechatIdTypeEnum.GROUP_ID;
+}
 
 export enum WechatMessageTypeEnum {
     TEXT = 1,
@@ -58,54 +84,57 @@ export interface IWechatMqttSendMessage {
 }
 
 export interface IWechatMessageProcessor {
-    config: any;
-    service?: AxiosInstance;
     canProcess(message: BaseWechatMessage): Promise<boolean>;
     replyMessage(message: BaseWechatMessage): Promise<string | null>;
     getServiceName(): string;
     getUseage(): string;
+    systemCall<T>(request: ISysCallRequest): Promise<ISysCallResponse<T>>;
 }
 
 export abstract class BaseWechatMessageProcessService implements IWechatMessageProcessor {
-    private mqttClient: mqtt.MqttClient;
-    serviceId: string;
-    protected clientId: string;
-    abstract config: any;
-    abstract service?: AxiosInstance;
-    abstract get serviceCode(): string;
+    private readonly mqttClient: mqtt.MqttClient;
+    public readonly serviceId: string;
+    public readonly clientId: string;
+    protected readonly config: IWechatService;
+    public abstract get serviceCode(): string;
+    public readonly atRegex: RegExp;
     abstract canProcess(message: BaseWechatMessage): Promise<boolean>;
     abstract replyMessage(message: BaseWechatMessage): Promise<string | null>;
     abstract getServiceName(): string;
     abstract getUseage(): string;
-    triggerBoardcast?(): Promise<string | null>
+    triggerBoardcast?(): Promise<string | null>;
     constructor(config: IWechatConfig, options: IWechatService) {
         this.clientId = config.id;
+        this.config = options;
         this.serviceId = options.id;
         this.mqttClient = mqtt.connect(config.mqttUrl);
+        this.atRegex = new RegExp(`@${ config.name }[\\s ]`);
         let that = this;
-        this.mqttClient.on('connect', () => {
+        this.mqttClient.on('connect', async () => {
             console.log(`service ${ that.getServiceName() } mqtt connected`);
             that.mqttClient.publish(`wechat/services/${ that.serviceCode }`, JSON.stringify({
                 msg: `Hello mqtt from ${ that.getServiceName() }`
             }));
-            that.subscribeTopics(that.getTopics());
+            let topics = await that.getTopics();
+            that.subscribeTopics(topics);
         });
         this.mqttClient.on('message', this.processTopic());
     }
 
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
+        // TODO: 将 config 重新抽象，抽象类不依赖子类设置的 config 即为 (this.config as any).attachedRoomId
         let topicList: string[] = [];
-        let roomIds = this.config.attachedRoomId?.map((roomId: string) => `wechat/${ this.clientId }/receve/groups/${ roomId }/#`);
+        let roomIds = (this.config as any).attachedRoomId?.map((roomId: string) => `wechat/${ this.clientId }/receve/groups/${ roomId }/#`);
         if (roomIds != undefined) {
             topicList = topicList.concat(roomIds);
         }
-        if (this.config.singleContactWhiteList === undefined) {
+        if ((this.config as any).singleContactWhiteList === undefined) {
             for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
                 topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
             }
             return topicList;
         }
-        let userIds = this.config.singleContactWhiteList.map((userId: string) => `wechat/${ this.clientId }/receve/users/${ userId }/#`);
+        let userIds = (this.config as any).singleContactWhiteList.map((userId: string) => `wechat/${ this.clientId }/receve/users/${ userId }/#`);
         if (userIds != undefined) {
             topicList = topicList.concat(userIds);
         }
@@ -207,7 +236,7 @@ export abstract class BaseWechatMessageProcessService implements IWechatMessageP
      * @param request 请求参数
      * @returns 返回执行结果
      */
-    public systemCall(request: ISysCallRequest): Promise<ISysCallResponse> {
+    public systemCall<T>(request: ISysCallRequest): Promise<ISysCallResponse<T>> {
         return new Promise((resolve, reject) => {
             const requestId = generateRequestId(`${this.clientId}`);
             request.requestId = requestId;
@@ -218,6 +247,7 @@ export abstract class BaseWechatMessageProcessService implements IWechatMessageP
 }
 
 export abstract class LocalWechatMessageProcessService extends BaseWechatMessageProcessService {
+    // TODO: 完善本地调用方法，发送消息通过本地方法调用
     constructor(config: IWechatConfig, options: IWechatService) {
         super(config, options);
     }
@@ -227,9 +257,9 @@ export abstract class LocalWechatMessageProcessService extends BaseWechatMessage
      * @param request 请求参数
      * @returns 返回执行结果
      */
-    public async systemCall(request: ISysCallRequest): Promise<ISysCallResponse> {
+    public async systemCall<T>(request: ISysCallRequest): Promise<ISysCallResponse<T>> {
         return await callSysMethod(globalClient[this.clientId], request).then((data) => {
-            let resp: ISysCallResponse = {
+            let resp: ISysCallResponse<T> = {
                 body: data,
                 params: undefined,
                 headers: undefined,
@@ -238,7 +268,7 @@ export abstract class LocalWechatMessageProcessService extends BaseWechatMessage
             }
             return resp;
         }).catch((e: Error) => {
-            let resp: ISysCallResponse = {
+            let resp: ISysCallResponse<T> = {
                 body: e.message,
                 params: undefined,
                 headers: undefined,
@@ -247,5 +277,86 @@ export abstract class LocalWechatMessageProcessService extends BaseWechatMessage
             }
             return resp;
         });
+    }
+}
+
+export interface ISetConfig {
+    userId?: string,
+    groupId?: string,
+    configs: { [k: string]: any }
+}
+
+export abstract class BaseConfigService {
+    protected readonly service: BaseWechatMessageProcessService;
+    constructor(service: BaseWechatMessageProcessService | BaseConfigService) {
+        if (service instanceof BaseConfigService) {
+            this.service = service.service;
+        } else {
+            this.service = service;
+        }
+    }
+    abstract getConfig<T>(): Promise<ISysCallResponse<T>>;
+    abstract getTargetConfig<T>(message: BaseWechatMessage): Promise<ISysCallResponse<T>>;
+    abstract saveServiceConfig<T>(body: ISetConfig): Promise<ISysCallResponse<T>>;
+}
+
+export class SysCallConfigService extends BaseConfigService {
+    public async getConfig<T>(): Promise<ISysCallResponse<T>> {
+        return await this.service.systemCall({
+            headers: { moduleId: this.service.serviceId },
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            router: "getConfig",
+        }) as ISysCallResponse<T>;
+    }
+    public async getTargetConfig<T>(message: BaseWechatMessage): Promise<ISysCallResponse<T>>  {
+        return await this.service.systemCall({
+            headers: { moduleId: this.service.serviceId },
+            body: {
+                userId: message.senderId,
+                groupId: message.groupId === null ? undefined : message.groupId,
+            },
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            router: "getConfig"
+        }) as ISysCallResponse<T>;
+    }
+    public async saveServiceConfig<T>(body: ISetConfig): Promise<ISysCallResponse<T>> {
+        return await this.service.systemCall({
+            body: body,
+            headers: {
+                moduleId: this.service.serviceId,
+            },
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            router: "saveConfig",
+        }) as ISysCallResponse<T>;
+    }
+}
+
+export class LocalConfigService extends BaseConfigService {
+    public async getTargetConfig<T>(message: BaseWechatMessage): Promise<ISysCallResponse<T>>  {
+        return {
+            headers: { moduleId: this.service.serviceId },
+            body: config.get(`modules.${this.service.serviceCode}.${this.service.serviceId}`),
+            params: undefined,
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            status: SysCallStatusEnum.SUCCESS,
+        }
+    }
+    public async getConfig<T>(): Promise<ISysCallResponse<T>> {
+        return {
+            headers: { moduleId: this.service.serviceId },
+            body: config.get(`modules.${this.service.serviceCode}.${this.service.serviceId}`),
+            params: undefined,
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            status: SysCallStatusEnum.SUCCESS,
+        }
+    }
+    public async saveServiceConfig<T>(body: ISetConfig): Promise<ISysCallResponse<T>> {
+        return {
+            headers: { moduleId: this.service.serviceId },
+            body: 0 as T,
+            params: undefined,
+            requestId: generateRequestId(this.service.clientId, this.service.serviceId),
+            status: SysCallStatusEnum.SUCCESS,
+        }
     }
 }

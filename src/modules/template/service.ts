@@ -22,17 +22,11 @@ const contentRegex = new RegExp(regex);
 
 class TemplateService extends BaseWechatMessageProcessService {
 
-    serviceCode: string = serviceCode;
-
-    private _service;
-    private _config: ITemplateConfig;
-
-    get config(): ITemplateConfig { return this._config };
-    get service(): AxiosInstance { return this._service };
+    public readonly serviceCode: string = serviceCode;
+    private readonly service: AxiosInstance;
     constructor(clientConfig: IWechatConfig, config: ITemplateConfig) {
         super(clientConfig, config);
-        this._service = factory.createService(config);
-        this._config = config;
+        this.service = factory.createService(config);
     }
 
     async canProcess(message: BaseWechatMessage): Promise<boolean> {
@@ -62,9 +56,9 @@ class TemplateService extends BaseWechatMessageProcessService {
         return '服务描述'
     }
 
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
-        topicList.push(...this.config.attachedRoomId.map(roomId => {
+        topicList.push(...(this.config as ITemplateConfig).attachedRoomId.map(roomId => {
             return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
         }));
         for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {

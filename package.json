@@ -1,6 +1,6 @@
 {
   "name": "meng_wechat_client",
-  "version": "2.0.0_alpha",
+  "version": "2.1.2_beta",
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --ext js,ts --exec \"./node_modules/.bin/ts-node src/app.ts\""

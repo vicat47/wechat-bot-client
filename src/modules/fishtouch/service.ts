@@ -104,7 +104,7 @@ class FishTouchService extends BaseWechatMessageProcessService {
     getUseage(): string {
         return "发送指令 摸鱼 实现。"
     }
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
         topicList.push(...this.config.attachedRoomId.map(roomId => {
             return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`

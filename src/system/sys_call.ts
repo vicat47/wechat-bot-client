@@ -11,19 +11,25 @@ interface ISysCallRequestHeader {
 }
 
 export interface ISysCallRequest {
-    body: any;
+    body?: any;
     params?: any;
     headers?: ISysCallRequestHeader;
     requestId: any;
     router: string;
 }
 
-export interface ISysCallResponse {
-    body: any;
+export type ISysCallResponse<T> = {
+    body: T;
     params: any;
     headers: any;
     requestId: any;
-    status: number;
+    status: SysCallStatusEnum.SUCCESS;
+} | {
+    body: string;
+    params: any;
+    headers: any;
+    requestId: any;
+    status: SysCallStatusEnum.ERROR;
 }
 
 const requestCache = new NodeCache({

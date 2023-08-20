@@ -7,14 +7,18 @@ import * as mqtt from "mqtt";
 import { BaseWechatClient } from "../wechat_client";
 import { WechatXMLMessage } from "../xml_message";
 import config from "config";
-import { IBaseContentMessage, IGroupUserContent, IUserContent } from "../data";
+import { IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent } from "../data";
+import httpWechatServiceFactory from "../request";
+import { AxiosInstance } from "axios";
 
 class WechatLaoZhangClient extends BaseWechatClient {
     private _mqttClient: mqtt.MqttClient | undefined;
     private websocket: WebSocket;
+    private readonly service: AxiosInstance;
 
     constructor(config: IWechatConfig) {
         super(config);
+        this.service = httpWechatServiceFactory(config)();
         this.websocket = new WebSocket(this.config.webSocketUrl);
         this.websocket.on("message", this.onMessage());
         this.websocket.on("close", this.onClose());
@@ -53,33 +57,47 @@ class WechatLaoZhangClient extends BaseWechatClient {
         let sendMsg = {
             para: msg
         }
-        let res = await service.post(this.config.httpUrl + "/api/get_personal_info", JSON.stringify(sendMsg));
+        let res = await this.service.post("/api/get_personal_info", JSON.stringify(sendMsg));
         console.log(res);
         return res;
     }
 
-    getUserList(): Promise<IBaseContentMessage<IUserContent>> {
+    async getUserList(): Promise<IBaseContentMessage<IUserContent>> {
         let msg = WeChatMessage.user_list();
         let sendMsg = {
             para: msg
         }
-        return service.post<IBaseContentMessage<IUserContent>>(this.config.httpUrl + "/api/getcontactlist", JSON.stringify(sendMsg))
-            .then(res => {
-                console.log(res);
-                return res.data;
-            });
+        const res = await this.service.post<IBaseContentMessage<IUserContent>>("/api/getcontactlist", JSON.stringify(sendMsg));
+        console.log(res);
+        return res.data;
     }
 
-    getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>> {
+    async getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>> {
         let msg = WeChatMessage.group_user_list();
         let sendMsg = {
             para: msg
         }
-        return service.post<IBaseContentMessage<IGroupUserContent>>(this.config.httpUrl + "/api/get_charroom_member_list", JSON.stringify(sendMsg))
-            .then(res => {
-                console.log(res);
-                return res.data;
-            });
+        const res = await this.service.post<IBaseContentMessage<IGroupUserContent>>("/api/get_charroom_member_list", JSON.stringify(sendMsg));
+        console.log(res);
+        return res.data;
+    }
+
+    /**
+     * 获取群成员昵称
+     * @returns 返回查询到的昵称
+     */
+    async getGroupUserNick(groupId: string, userId: string): Promise<IBaseContentMessage<IGroupUserNickContent>> {
+        let msg = WeChatMessage.group_user_nick(groupId, userId);
+        let sendMsg = {
+            para: msg
+        }
+        const res = await this.service.post<IBaseContentMessage<any>>("/api/getmembernick", JSON.stringify(sendMsg));
+        console.log(res);
+        if (typeof res.data.content !== 'string') {
+            return res.data;
+        }
+        res.data.content = JSON.parse(res.data.content);
+        return res.data;
     }
 
     async sendTxtMsg(content: string, target: string): Promise<any> {
@@ -87,8 +105,8 @@ class WechatLaoZhangClient extends BaseWechatClient {
         let sendMsg = {
             para: msg
         }
-        let res = await service.post(this.config.httpUrl + "/api/sendtxtmsg", JSON.stringify(sendMsg));
-        console.log(res);
+        let res = await this.service.post("/api/sendtxtmsg", JSON.stringify(sendMsg));
+        console.log(JSON.stringify(res.data));
         return res;
     }
 
@@ -107,7 +125,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
         if (message.isRoomMsg()) {
             return new BaseWechatMessage(message.id, message.wxid ?? null, null, wechatMessageType, message.id1 ?? '', message.content);
         } else if ((wechatMessageType === WechatMessageTypeEnum.XML || wechatMessageType === WechatMessageTypeEnum.PICTURE) && message.content.id1 !== undefined && message.content.id1) {
-            // todo: 区分公众号和其他 xml 内容
+            // TODO: 区分公众号和其他 xml 内容
             let userId = message.content.id2 === "" ? message.content.id1 : message.content.id2;
             let groupId = message.content.id2 === "" ? null : message.content.id1;
             let xmlJsonContent = message.content.content;

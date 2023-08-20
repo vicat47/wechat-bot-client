@@ -23,34 +23,32 @@ const jenkinsRegex = new RegExp(regex);
 
 
 class JenkinsService extends BaseWechatMessageProcessService {
-    getTopics(): string[] {
+    async getTopics(): Promise<string[]> {
         let topicList = [];
-        if (this.config.singleContactWhiteList !== undefined && this.config.singleContactWhiteList.length > 0) {
-            topicList.push(...this.config.singleContactWhiteList.map(userId => {
+        let config = this.config as IJenkinsConfig;
+        if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.length > 0) {
+            topicList.push(...config.singleContactWhiteList.map(userId => {
                 return `wechat/${ this.clientId }/receve/users/${ userId }/#`
             }));
         }
         return topicList
     }
-    serviceCode: string = serviceCode;
-    private _service;
-    private _config: IJenkinsConfig;
+    public readonly serviceCode: string = serviceCode;
+    private readonly service;
 
-    get config(): IJenkinsConfig { return this._config };
-    get service(): AxiosInstance { return this._service };
     constructor(clientConfig: IWechatConfig, config: IJenkinsConfig) {
         super(clientConfig, config);
-        this._service = factory.createService(config);
-        this._config = config;
+        this.service = factory.createService(config);
     }
 
     public async canProcess(message: BaseWechatMessage): Promise<boolean> {
+        let config = this.config as IJenkinsConfig
         if (typeof message.content !== 'string') {
             return false;
         }
         if (message.groupId === null) {
             // 过滤用户
-            if (this.config.singleContactWhiteList !== undefined && this.config.singleContactWhiteList.indexOf(message.senderId) < 0) {
+            if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.indexOf(message.senderId) < 0) {
                 return false;
             }
             let result = jenkinsRegex.exec(message.content);
@@ -59,7 +57,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
             }
             return true;
         }
-        if (this.config.attachedRoomId.indexOf(message.groupId) < 0) {
+        if (config.attachedRoomId.indexOf(message.groupId) < 0) {
             return false;
         }
         // 不是 @ 我
@@ -91,7 +89,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
             return "工程名称错误!请检查";
         }
         let jobDetail = job[0]
-        let buildApi = `${jobDetail.url.replace(this.config.baseUrl, "")}build`;
+        let buildApi = `${jobDetail.url.replace((this.config as IJenkinsConfig).baseUrl, "")}build`;
         
         let buildResult = await this.service.get(buildApi)
             .catch(() => {});

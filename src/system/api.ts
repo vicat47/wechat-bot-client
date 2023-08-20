@@ -3,13 +3,15 @@ import { asEnum } from "../utils/tool";
 import { BaseWechatClient } from "../wechat/wechat_client";
 import { ISysCallRequest } from "./sys_call";
 import { getModuleConfig, saveModuleConfig } from "./sys_config";
-import { syncGroupUser, syncUserList } from "./sys_contact";
+import { getNickById, syncGroupUser, syncUserList } from "./sys_contact";
+import { chatroomRegex } from "../wechat/base_wechat";
 
 export enum SysCallMethodEnum {
     syncUserList = "syncUserList",
     syncGroupUser = "syncGroupUser",
     getConfig = "getConfig",
     saveConfig = "saveConfig",
+    getNameById = "getNameById",
 }
 
 interface Command {
@@ -122,11 +124,54 @@ class SaveConfigCommand implements Command {
     }
 }
 
+class getNameByIdCommand implements Command {
+    static ajv = new Ajv();
+    static schema = this.ajv.compile({
+        type: "object",
+        properties: {
+            body: {
+                type: "object",
+                properties: {
+                    userId: { type: "string" },
+                    groupId: {
+                        type: "string",
+                        pattern: chatroomRegex,
+                    },
+                },
+                additionalProperties: false,
+            },
+            headers: {
+                type: "object",
+                properties: {
+                    moduleId: { type: "string" }
+                },
+                required: ["moduleId"],
+                additionalProperties: true,
+            },
+            requestId: { type: "string" },
+            router: { type: "string" },
+        },
+        required: ["router", "requestId", "headers", "body"],
+        additionalProperties: true,
+    });
+    async execute(client: BaseWechatClient, request: ISysCallRequest): Promise<any> {
+        if (!getNameByIdCommand.schema(request)) {
+            let errorMessage = getNameByIdCommand.schema.errors?.map(item => item.message).join('\n');
+            throw new Error(`request validate not pass...${errorMessage}`);
+        }
+        return await getNickById(client, request.body);
+    }
+    match(e: SysCallMethodEnum): boolean {
+        return e === SysCallMethodEnum.getNameById;
+    }
+}
+
 const commands: Command[] = [
     new SyncUserListCommand(),
     new SyncGroupUserCommand(),
     new GetConfigCommand(),
     new SaveConfigCommand(),
+    new getNameByIdCommand(),
 ];
 
 export async function callSysMethod(client: BaseWechatClient, request: ISysCallRequest) {

@@ -40,6 +40,7 @@ export function wrapDatasourceConfig(config: IDatasourceConfig, entities: BaseDa
         },
         // 仅记录 error 级别日志
         logging: ["error"],
+        // logging: true,
         // 记录查询时长超过 1s 的 sql
         maxQueryExecutionTime: 1000,
         entities,
