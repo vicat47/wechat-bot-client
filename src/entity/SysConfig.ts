@@ -12,6 +12,6 @@ export class SysConfig {
     value!: string;
     @Column()
     type!: string;
-    @Column("time with time zone", {name: "create_time"})
+    @Column({name: "create_time"})
     createTime!: string;
 }

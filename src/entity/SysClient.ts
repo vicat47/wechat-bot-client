@@ -15,6 +15,6 @@ export class SysClient implements IWechatConfig {
     name!: string;
     @Column({name: "client_type"})
     clientType!: number;
-    @Column("time with time zone", {name: "create_time"})
+    @Column({name: "create_time"})
     createTime!: string;
 }

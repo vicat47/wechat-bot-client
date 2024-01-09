@@ -10,6 +10,6 @@ export class SysUser {
     nickName!: string;
     @Column({name: "user_type"})
     userType!: string;
-    @Column("time with time zone", {name: "create_time"})
+    @Column({name: "create_time"})
     createTime!: string;
 }

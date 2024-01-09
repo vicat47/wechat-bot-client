@@ -9,6 +9,7 @@ import { SysGroup } from "./entity/SysGroup";
 import { SysModuleConfig } from "./entity/SysModuleConfig";
 import { SysUser } from "./entity/SysUser";
 import { SysUserGroup } from "./entity/SysUserGroup";
+import { PostRefactoring1704692532677 } from "./migration/1704692532677-PostRefactoring";
 
 export interface IDatasourceConfig {
     type: string;
@@ -45,7 +46,9 @@ export function wrapDatasourceConfig(config: IDatasourceConfig, entities: BaseDa
         maxQueryExecutionTime: 1000,
         entities,
         subscribers: [],
-        migrations: [],
+        migrations: [
+            PostRefactoring1704692532677
+        ],
     }
 }
 

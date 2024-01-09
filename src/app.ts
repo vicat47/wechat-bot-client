@@ -21,7 +21,13 @@ async function main() {
     // 初始化数据库
     await AppDataSource.initialize();
     console.log("connected database");
+    console.log("will initlize database");
+    await AppDataSource.runMigrations();
     let wechatClientList = await getSysClientList();
+    if (wechatClientList.length <= 0) {
+        console.log("没有活动的客户端，请检查配置...");
+        return;
+    }
     for (let config of wechatClientList) {
         let client;
         if (config.clientType === WechatClientTypeEnum.LAOZHANG) {

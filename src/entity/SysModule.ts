@@ -19,7 +19,7 @@ export class SysModule {
     priority!: number;
     @Column()
     enable!: string;
-    @Column("time with time zone", {name: "create_time"})
+    @Column({name: "create_time"})
     createTime!: string;
     @OneToMany(() => SysModuleConfig, (moduleConfig) => moduleConfig.sysModule, {
         createForeignKeyConstraints: false,

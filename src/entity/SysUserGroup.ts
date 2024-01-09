@@ -10,6 +10,6 @@ export class SysUserGroup {
     groupId!: string;
     @Column({name: "nick_name"})
     nickName!: string;
-    @Column("time with time zone", {name: "create_time"})
+    @Column({name: "create_time"})
     createTime!: string;
 }
