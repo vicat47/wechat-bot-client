@@ -1,12 +1,13 @@
-import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
-import factory from "./request";
-import { IJenkinsConfig } from "./config";
-import { AxiosInstance } from "axios";
-import { IJenkinsMainPageApi } from "./api";
-import config from "config";
-import { getClientName } from "../../system/sys_config";
-import { IWechatConfig } from "../../config";
 import path from "path";
+
+import {IWechatConfig} from "#/config";
+import {getClientName} from "#system/sys_config";
+import BaseWechatMessage from "#wechat/base_wechat";
+
+import factory from "./request";
+import {IJenkinsConfig} from "./config";
+import {IJenkinsMainPageApi} from "./api";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
 
 export const serviceCode = path.basename(__dirname);
 
@@ -22,17 +23,8 @@ const regex = `(jenkins)构建\s*(.+)`;
 const jenkinsRegex = new RegExp(regex);
 
 
-class JenkinsService extends BaseWechatMessageProcessService {
-    async getTopics(): Promise<string[]> {
-        let topicList = [];
-        let config = this.config as IJenkinsConfig;
-        if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.length > 0) {
-            topicList.push(...config.singleContactWhiteList.map(userId => {
-                return `wechat/${ this.clientId }/receve/users/${ userId }/#`
-            }));
-        }
-        return topicList
-    }
+class JenkinsService extends LocalWechatMessageProcessService {
+    public readonly handleNext = false;
     public readonly serviceCode: string = serviceCode;
     private readonly service;
 
@@ -42,7 +34,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
     }
 
     public async canProcess(message: BaseWechatMessage): Promise<boolean> {
-        let config = this.config as IJenkinsConfig
+        let config = this.serviceConfig as IJenkinsConfig
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -65,7 +57,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
             return false;
         }
         let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
-        
+
         let result = jenkinsRegex.exec(content);
         if (result === null) {
             return false;
@@ -89,8 +81,8 @@ class JenkinsService extends BaseWechatMessageProcessService {
             return "工程名称错误!请检查";
         }
         let jobDetail = job[0]
-        let buildApi = `${jobDetail.url.replace((this.config as IJenkinsConfig).baseUrl, "")}build`;
-        
+        let buildApi = `${jobDetail.url.replace((this.serviceConfig as IJenkinsConfig).baseUrl, "")}build`;
+
         let buildResult = await this.service.get(buildApi)
             .catch(() => {});
         if (!buildResult) {
@@ -100,7 +92,7 @@ class JenkinsService extends BaseWechatMessageProcessService {
         return null;
     }
 
-    public getUseage(): string {
+    public getUsage(): string {
         return "jenkins 构建用法: (服务名称)构建 实际构建远端的JOB名称"
     }
     public getServiceName(): string {

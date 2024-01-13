@@ -1,3 +1,4 @@
-import { IWechatWebRequestService, IWechatRoomService } from "../../config"
+import {IWechatRoomServiceConfig, IWechatWebRequestServiceConfig} from "#/config";
 
-export interface IJenkinsConfig extends IWechatRoomService, IWechatWebRequestService {}
+export interface IJenkinsConfig extends IWechatRoomServiceConfig, IWechatWebRequestServiceConfig {
+}

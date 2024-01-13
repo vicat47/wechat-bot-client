@@ -1,19 +1,22 @@
 import WebSocket from "ws";
-import WeChatMessage from "./wechat_com"
-import service, { HttpType } from "../request";
-import { BaseWechatClient } from "../wechat_client";
-import { MqttClient } from "mqtt";
-import { IWechatConfig } from "../../config";
-import base_wechat from "../base_wechat";
-import { IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent } from "../data";
-import httpWechatServiceFactory from "../request";
-import { AxiosInstance } from "axios";
+import {MqttClient} from "mqtt";
+import {AxiosInstance} from "axios";
 
-class WechatComClient extends BaseWechatClient {    
+import httpWechatServiceFactory, {HttpType} from "#wechat/request";
+import {BaseWechatClient} from "#wechat/clients/wechat_client";
+import base_wechat from "#wechat/base_wechat";
+import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent} from "#wechat/data";
+
+import {IWechatConfig} from "#/config";
+import WeChatMessage from "./wechat_com";
+
+class WechatComClient extends BaseWechatClient {
     get mqttClient(): MqttClient {
         throw new Error("Method not implemented.");
     }
-    connect(): Promise<void> {
+
+    async connect(): Promise<void> {
+        await super.connect();
         throw new Error("Method not implemented.");
     }
     toWechatMessage(message: any): base_wechat {
@@ -28,7 +31,7 @@ class WechatComClient extends BaseWechatClient {
         this.url = config.webSocketUrl;
         this.websocket = new WebSocket(this.url);
     }
-    
+
     async sendWeChatMessage(message: WeChatMessage): Promise<any> {
         switch (message.type.typeMethod) {
             case HttpType.GET:

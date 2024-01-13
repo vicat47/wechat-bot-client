@@ -1,5 +1,5 @@
-import axios, { AxiosInstance } from "axios";
-import { IWechatConfig } from "../config";
+import axios, {AxiosInstance} from "axios";
+import {IWechatConfig} from "#/config";
 
 export default function httpWechatServiceFactory(config: IWechatConfig): () => AxiosInstance {
     return function(): AxiosInstance {

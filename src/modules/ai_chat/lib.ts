@@ -1,5 +1,5 @@
 import NodeCache from "node-cache";
-import BaseWechatMessage from "../../wechat/base_wechat";
+import BaseWechatMessage from "#wechat/base_wechat";
 
 export interface IMessage {
     role: string
@@ -30,7 +30,7 @@ export abstract class HistoryManager<T> {
             useClones: false,
         });
     }
-    
+
     abstract setPrompt(target: string, prompt: string): boolean;
     abstract clearHistory(target: string): boolean;
 

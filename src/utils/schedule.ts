@@ -1,4 +1,4 @@
-import schedule, { RecurrenceSegment, Timezone } from 'node-schedule';
+import schedule, {RecurrenceSegment, Timezone} from "node-schedule";
 
 export interface Rule {
   date?: RecurrenceSegment;

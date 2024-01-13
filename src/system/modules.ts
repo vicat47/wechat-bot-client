@@ -1,7 +1,7 @@
 import Ajv from "ajv";
-import { IWechatConfig } from "../config";
-import { BaseWechatMessageProcessService } from "../wechat/base_wechat";
-import { getClientModuleGlobalConfig, getSysClientById } from "./sys_config";
+import {IWechatConfig} from "#/config";
+import {getClientModuleGlobalConfig, getSysClientById} from "#system/sys_config";
+import {BaseWechatMessageProcessService} from "#wechat/message_processor/base_processor";
 
 const ajv = new Ajv()
 

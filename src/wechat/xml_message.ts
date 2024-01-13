@@ -1,4 +1,4 @@
-import { XMLParser, XMLValidator } from 'fast-xml-parser'
+import {XMLParser, XMLValidator} from "fast-xml-parser";
 
 // 这里是订阅号内容捏
 
@@ -147,5 +147,6 @@ export class WechatXMLMessage implements WechatXML {
 
 export interface XMLMessageProcessor {
     onMessage(): Promise<string>
-    onReceve(xmlMessage: WechatXMLMessage): Promise<string | undefined>
+
+    onReceive(xmlMessage: WechatXMLMessage): Promise<string | undefined>
 }

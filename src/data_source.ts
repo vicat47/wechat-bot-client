@@ -1,15 +1,18 @@
 import config from "config";
-import { DataSource, DataSourceOptions } from "typeorm";
+import NodeCache from "node-cache";
+import {DataSource, DataSourceOptions} from "typeorm";
 import InMemoryCacheProvider from "typeorm-in-memory-cache";
-import { BaseDataSourceOptions } from "typeorm/data-source/BaseDataSourceOptions";
-import { SysClient } from "./entity/SysClient";
-import { SysConfig } from "./entity/SysConfig";
-import { SysModule } from "./entity/SysModule";
-import { SysGroup } from "./entity/SysGroup";
-import { SysModuleConfig } from "./entity/SysModuleConfig";
-import { SysUser } from "./entity/SysUser";
-import { SysUserGroup } from "./entity/SysUserGroup";
-import { PostRefactoring1704692532677 } from "./migration/1704692532677-PostRefactoring";
+import {BaseDataSourceOptions} from "typeorm/data-source/BaseDataSourceOptions";
+
+import {SysClient} from "#entity/SysClient";
+import {SysConfig} from "#entity/SysConfig";
+import {SysModule} from "#entity/SysModule";
+import {SysGroup} from "#entity/SysGroup";
+import {SysModuleConfig} from "#entity/SysModuleConfig";
+import {SysUser} from "#entity/SysUser";
+import {SysUserGroup} from "#entity/SysUserGroup";
+
+import {PostRefactoring1704692532677} from "#/migration/1704692532677-PostRefactoring";
 
 export interface IDatasourceConfig {
     type: string;
@@ -36,7 +39,11 @@ export function wrapDatasourceConfig(config: IDatasourceConfig, entities: BaseDa
         // },
         cache: {
             provider() {
-                return new InMemoryCacheProvider()
+                const cache = new NodeCache({
+                    stdTTL: 600,
+                    checkperiod: 120,
+                });
+                return new InMemoryCacheProvider(cache);
             }
         },
         // 仅记录 error 级别日志

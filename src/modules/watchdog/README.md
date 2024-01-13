@@ -19,7 +19,7 @@
 | watch           | ✅   | 监视哪个群哪个用户         | json   | {"users": ["userId"], "groups": [{"id": "groupId", "userIds": ["userId1"]}]} |
 | preProcessor   |      | （js 代码）消息预处理器    | string | 通过 **Function** 实现动态方法调用（预留，暂不实现）         |
 | regex           | ✅    | 正则                       | string | 正则表达式，判断，捕获消息分组                               |
-| predicate       |      | （js 代码）消息判断器      | string | 用于正则判断不满足的情况，与正则为二选一关系（预留，暂不实现） |
+| predicate       |      | （js 代码）消息判断器      | string | 用于在正则之后判断是否该处理（预留，暂不实现） |
 | behavior        | ✅    | 行为枚举                   | string | FORWARD=转发到指定群/用户<br />RECORD=记录（预留，暂不实现）<br />CALLMETHOD=方法调用（预留，暂不实现） |
 | method          |      | 行为的 method              | string | 当 behavior = CALLMETHOD 时通过 **Function** 实现动态方法调用（预留，暂不实现） |
 | postProcessor  |      | 消息后置处理器             | string | 消息发送前的处理器，通过 **Function** 实现动态方法调用       |

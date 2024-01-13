@@ -1,11 +1,12 @@
-import { SysGroup } from "../../entity/SysGroup";
-import { SysUser } from "../../entity/SysUser";
-import { SysUserGroup } from "../../entity/SysUserGroup";
-import { SysCallMethodEnum } from "../../system/api";
-import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
+import {SysGroup} from "#entity/SysGroup";
+import {SysUser} from "#entity/SysUser";
+import {SysUserGroup} from "#entity/SysUserGroup";
+import {SysCallMethodEnum} from "#system/api";
+import BaseWechatMessage from "#wechat/base_wechat";
+import {BaseWechatMessageProcessService} from "#wechat/message_processor/base_processor";
 
 enum Command {
-    UDPATE_USER = "/update_user",
+    UPDATE_USER = "/update_user",
     UPDATE_GROUP_USER = "/update_group"
 }
 
@@ -18,8 +19,8 @@ type SysCommandType = {
 }
 
 export function getCommand(message: string): Command | undefined {
-    if (message.startsWith(Command.UDPATE_USER)) {
-        return Command.UDPATE_USER;
+    if (message.startsWith(Command.UPDATE_USER)) {
+        return Command.UPDATE_USER;
     } else if (message.startsWith(Command.UPDATE_GROUP_USER)) {
         return Command.UPDATE_GROUP_USER;
     } else {
@@ -29,6 +30,7 @@ export function getCommand(message: string): Command | undefined {
 
 /**
  * 更新用户命令
+ * @param service 消息处理器，用来进行系统调用
  * @param message 实际的消息对象
  * @param content 消息的内容
  */
@@ -61,6 +63,6 @@ async function updateGroupUser(service: BaseWechatMessageProcessService, message
 }
 
 export const commandFunctions: SysCommandType = {
-    [Command.UDPATE_USER]: updateUser,
+    [Command.UPDATE_USER]: updateUser,
     [Command.UPDATE_GROUP_USER]: updateGroupUser,
 }

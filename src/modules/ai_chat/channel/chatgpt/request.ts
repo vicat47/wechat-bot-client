@@ -1,14 +1,14 @@
-import axios, { AxiosInstance } from 'axios';
-import { IWechatWebRequestService } from '../../../../config';
+import axios, {AxiosInstance} from "axios";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
-export default function restServiceFactory(config: IWechatWebRequestService): () => AxiosInstance {
+export default function restServiceFactory(config: IWechatWebRequestServiceConfig): () => AxiosInstance {
     return function(): AxiosInstance {
         const service = axios.create({
             baseURL: config.baseUrl,
             // withCredentials: true, // send cookies when cross-domain requests
-            timeout: 60_000 // request timeout
+            timeout: 120_000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             cfg => {
                 cfg.headers = {
@@ -24,7 +24,7 @@ export default function restServiceFactory(config: IWechatWebRequestService): ()
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 return response;

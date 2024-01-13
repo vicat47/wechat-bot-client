@@ -1,5 +1,5 @@
-import { IWechatWebRequestService, IWechatRoomService } from "../../config";
+import {IWechatRoomServiceConfig, IWechatWebRequestServiceConfig} from "#/config";
 
-export interface IWeatherConfig extends IWechatRoomService, IWechatWebRequestService {
+export interface IWeatherConfig extends IWechatRoomServiceConfig, IWechatWebRequestServiceConfig {
     cityId: number
 }

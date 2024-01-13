@@ -1,10 +1,10 @@
-import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
-import { ISystemConfig } from "./config";
-import { commandFunctions, getCommand } from "./command";
-import config from "config";
-import { IWechatConfig } from "../../config";
-import { getClientName } from "../../system/sys_config";
 import path from "path";
+
+import {IWechatConfig} from "#/config";
+import BaseWechatMessage from "#wechat/base_wechat";
+import {ISystemConfig} from "./config";
+import {commandFunctions, getCommand} from "./command";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
 
 export const serviceCode = path.basename(__dirname);
 
@@ -12,13 +12,28 @@ const keyword = 'sys'
 const regex = `${ keyword }\\s+([\\s\\S]+)`;
 const contentRegex = new RegExp(regex);
 
-class SystemService extends BaseWechatMessageProcessService {
-    
+class SystemService extends LocalWechatMessageProcessService {
+    public readonly handleNext = false;
     public readonly serviceCode: string = serviceCode;
 
+    constructor(wechatConfig: IWechatConfig, systemConfig: ISystemConfig) {
+        super(wechatConfig, systemConfig);
+    }
+
     async canProcess(message: BaseWechatMessage): Promise<boolean> {
-        let config = this.config as ISystemConfig;
+        let config = this.serviceConfig as ISystemConfig;
         if (typeof message.content !== 'string') {
+            return false;
+        }
+        // 群里但是不是 @ 我的
+        if (message.groupId !== undefined && message.groupId !== null && !this.atRegex.test(message.content)) {
+            return false;
+        }
+        // 去掉 @
+        let content = message.content.replace(this.atRegex, '').trim();
+
+        // 处理关键字
+        if (content.substring(0, keyword.length) !== keyword) {
             return false;
         }
         // 处理单聊的情况
@@ -27,19 +42,13 @@ class SystemService extends BaseWechatMessageProcessService {
             if (config.singleContactWhiteList !== undefined && config.singleContactWhiteList.indexOf(message.senderId) < 0) {
                 return false;
             }
-            return message.content.trim().substring(0, keyword.length) === keyword;
+            return true;
         }
         // 是否在接入的 roomId 中有
         if (config.attachedRoomId.indexOf(message.groupId) < 0) {
             return false;
         }
-        // 不是 @ 我
-        if (message.content.indexOf(`@${getClientName(this.clientId)} `) < 0) {
-            return false;
-        }
-        // 去掉 @
-        let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
-        return content.substring(0, keyword.length) === keyword;
+        return true;
     }
 
     async replyMessage(message: BaseWechatMessage): Promise<string | null> {
@@ -48,7 +57,7 @@ class SystemService extends BaseWechatMessageProcessService {
             return null;
         }
         // 去除 @ 符
-        message.content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
+        message.content = message.content.replace(this.atRegex, '').trim();
 
         let result = contentRegex.exec(message.content);
         if (result === null) {
@@ -66,10 +75,10 @@ class SystemService extends BaseWechatMessageProcessService {
         return 'system 模块';
     }
 
-    getUseage(): string {
+    getUsage(): string {
         return '"sys /command [args]"'
     }
-    
+
 }
 
 export function register(wechatConfig: IWechatConfig, chatgptConfig: ISystemConfig): SystemService {

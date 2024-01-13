@@ -1,6 +1,6 @@
-import { IWechatWebRequestService } from "../../../../config";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
-export interface IBaiduThousandSailsApiConfig extends IWechatWebRequestService {
+export interface IBaiduThousandSailsApiConfig extends IWechatWebRequestServiceConfig {
     apiKey: string;
     clientSecret: string;
 }

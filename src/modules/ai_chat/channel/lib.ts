@@ -1,6 +1,7 @@
-import { ISysCallResponse, SysCallStatusEnum } from "../../../system/sys_call";
-import BaseWechatMessage, { BaseConfigService, ISetConfig } from "../../../wechat/base_wechat";
-import { ChatGptService } from "./chatgpt/service";
+import {ISysCallResponse, SysCallStatusEnum} from "#system/sys_call";
+import BaseWechatMessage, {ISetConfig} from "#wechat/base_wechat";
+import {ChatGptService} from "#modules/ai_chat/channel/chatgpt/service";
+import {BaseConfigService} from "#wechat/config_service/base_config";
 
 export class AiChatConfigDecorator extends BaseConfigService {
     public modelType = ChatGptService.modelType;
@@ -21,7 +22,7 @@ export class AiChatConfigDecorator extends BaseConfigService {
     }
     saveServiceConfig<T>(body: ISetConfig): Promise<ISysCallResponse<T>> {
         // TODO: 实现保存配置
-        // let resp = 
+        // let resp =
         throw new Error("Method not implemented.");
     }
 }

@@ -1,10 +1,14 @@
-import BaseWechatMessage, { IWechatMqttSendMessage, WechatMessageTypeEnum, isGroup, isUser } from "../../wechat/base_wechat";
-import { IWatchdogConfig, behavior } from "./config";
+import BaseWechatMessage, {IWechatSendMessage, WechatMessageTypeEnum} from "#wechat/base_wechat";
+
+import {behavior, IWatchdogConfig} from "./config";
+import {snowflake} from "#/app";
+import {isGroup, isUser} from "#wechat/util";
 
 export function behaviorFactory() {
     return function(behaviorType: behavior, config: IWatchdogConfig, context: IBaseBehaviorContext): BaseBehavior | undefined {
         switch(behaviorType) {
-            case "CALLMETHOD": return new CallMethodBehavoir(config, context);
+            case "CALLMETHOD":
+                return new CallMethodBehavior(config, context);
             case "FORWARD": return new ForwardBehavior(config, context);
             case "RECORD": return new RecordBehavior(config, context);
         }
@@ -23,11 +27,12 @@ abstract class BaseBehavior {
         this.config = config;
         this.context = context;
     }
-    abstract execute(message: BaseWechatMessage): IWechatMqttSendMessage[] | undefined;
+
+    abstract execute(message: BaseWechatMessage): IWechatSendMessage[] | undefined;
 }
 
-class CallMethodBehavoir extends BaseBehavior {
-    execute(message: BaseWechatMessage): IWechatMqttSendMessage[] | undefined {
+class CallMethodBehavior extends BaseBehavior {
+    execute(message: BaseWechatMessage): IWechatSendMessage[] | undefined {
         if (this.config.method === undefined) {
             return undefined;
         }
@@ -36,14 +41,15 @@ class CallMethodBehavoir extends BaseBehavior {
 }
 
 class ForwardBehavior extends BaseBehavior {
-    execute(message: BaseWechatMessage): IWechatMqttSendMessage[] | undefined {
-        let sendMessages: IWechatMqttSendMessage[] = []
+    execute(message: BaseWechatMessage): IWechatSendMessage[] | undefined {
+        let sendMessages: IWechatSendMessage[] = []
         if (typeof message.content !== "string") {
             return undefined;
         }
         let content = message.content;
         this.config.forwardTargets?.forEach(target => {
             sendMessages.push({
+                id: snowflake.generate().toString(),
                 service: this.context.serviceCode,
                 groupId: isGroup(target) ? target : null,
                 targetId: isUser(target) ? target : null,
@@ -56,7 +62,7 @@ class ForwardBehavior extends BaseBehavior {
 }
 
 class RecordBehavior extends BaseBehavior {
-    execute(message: BaseWechatMessage): IWechatMqttSendMessage[] | undefined {
+    execute(message: BaseWechatMessage): IWechatSendMessage[] | undefined {
         throw new Error("Method not implemented.");
     }
 }

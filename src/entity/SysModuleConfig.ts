@@ -1,5 +1,5 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
-import { SysModule } from "./SysModule";
+import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
+import {SysModule} from "#/entity/SysModule";
 
 @Entity()
 export class SysModuleConfig {

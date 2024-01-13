@@ -1,5 +1,6 @@
-import BaseWechatMessage, { BaseConfigService, ISetConfig } from "../../wechat/base_wechat";
-import { BaseAiChatService } from "./lib";
+import BaseWechatMessage, {ISetConfig} from "#wechat/base_wechat";
+import {BaseAiChatService} from "#modules/ai_chat/lib";
+import {BaseConfigService} from "#wechat/config_service/base_config";
 
 enum Command {
     CONFIG = "/config",
@@ -72,7 +73,7 @@ class ConfigGroupCommand extends AiChatCommand {
         if (wechatMessage.groupId !== null) {
             this.chatService.clearAll(wechatMessage.groupId);
         } else {
-            // TODO 修复该处代码
+            // FIXME: 删除掉所有前缀为该群 ID 的 key
             // this.cache.del(this.cache.keys()
             //     .filter(k => chatroomRegex.test(k)));
         }

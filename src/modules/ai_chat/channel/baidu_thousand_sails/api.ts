@@ -1,4 +1,4 @@
-import { IMessage } from "../../lib"
+import {IMessage} from "#/modules/ai_chat/lib";
 
 export interface IBaiduThousandSailsReply {
     id: string;

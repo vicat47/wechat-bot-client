@@ -1,15 +1,17 @@
 import WebSocket from "ws";
-import WeChatMessage, { RecvMsg, WechatMessageType, XMLMessageContent } from "./wechat_laozhang";
-import BaseWechatMessage, { WechatMessageTypeEnum } from "../base_wechat";
-import service from "../request";
-import { IWechatConfig } from "../../config";
-import * as mqtt from "mqtt";
-import { BaseWechatClient } from "../wechat_client";
-import { WechatXMLMessage } from "../xml_message";
 import config from "config";
-import { IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent } from "../data";
-import httpWechatServiceFactory from "../request";
-import { AxiosInstance } from "axios";
+
+import * as mqtt from "mqtt";
+import {AxiosInstance} from "axios";
+
+import {IWechatConfig} from "#/config";
+import {BaseWechatClient} from "#wechat/clients/wechat_client";
+import {WechatXMLMessage} from "#wechat/xml_message";
+import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent} from "#wechat/data";
+import BaseWechatMessage, {WechatMessageTypeEnum} from "#wechat/base_wechat";
+import httpWechatServiceFactory from "#wechat/request";
+
+import WeChatMessage, {RecvMsg, WechatMessageType, XMLMessageContent} from "./wechat_laozhang";
 
 class WechatLaoZhangClient extends BaseWechatClient {
     private _mqttClient: mqtt.MqttClient | undefined;
@@ -36,20 +38,20 @@ class WechatLaoZhangClient extends BaseWechatClient {
     }
 
     async connect(): Promise<any> {
-        let that = this;
-        return new Promise<void>((resolve, reject) =>
-            that.websocket.on("open", async () => {
-                console.log(`websocket ${that.config.id} 已连接`);
-                await that.getMe();
-                that.mqttClient = mqtt.connect(that.config.mqttUrl);
-                console.log(`mqtt client 已连接`);
-                that.subscribeMqttMessage();
+        let pList: Promise<any>[] = [];
+        pList.push(super.connect());
+        pList.push(new Promise<void>((resolve, reject) => {
+            this.websocket.on("open", async () => {
+                console.log(`websocket ${this.config.id} 已连接`);
+                await this.getMe();
                 for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-                    await that.sendTxtMsg(`wxid: ${that.config.id} 服务已启动，已连接`, adminUser);
+                    await this.sendTxtMsg(`wxid: ${this.config.id} 服务已启动，已连接`, adminUser);
                 }
                 resolve();
-            }
-        ));
+            });
+            setTimeout(() => reject("websocket not connected..."), 15000);
+        }));
+        return await Promise.all(pList);
     }
 
     async getMe(): Promise<any> {
@@ -149,7 +151,8 @@ class WechatLaoZhangClient extends BaseWechatClient {
             switch (type) {
                 case WechatMessageType.RECV_TXT_MSG:
                     console.log(data.toString());
-                    that.publishMqttMessage(that.toWechatMessage(new RecvMsg<string>(j)));
+                    // that.publishMessage(that.toWechatMessage(new RecvMsg<string>(j)));
+                    super.processReceivedMessage(that.toWechatMessage(new RecvMsg<string>(j)));
                     break;
                 case WechatMessageType.RECV_PIC_MSG:
                 case WechatMessageType.CHAOS_TYPE:
@@ -158,9 +161,10 @@ class WechatLaoZhangClient extends BaseWechatClient {
                         let c = j.content as XMLMessageContent;
                         let xmlMessage = new WechatXMLMessage(c.content);
                         j.content.content = xmlMessage;
-                        that.publishMqttMessage(that.toWechatMessage(new RecvMsg<XMLMessageContent>(j)));
+                        // that.publishMessage(that.toWechatMessage(new RecvMsg<XMLMessageContent>(j)));
+                        super.processReceivedMessage(that.toWechatMessage(new RecvMsg<XMLMessageContent>(j)));
                     } catch (e) {
-                        console.log('XML 消息转换失败。。。');
+                        console.error(`XML 消息转换失败。。。\n${j}`);
                         return;
                     }
                     break;

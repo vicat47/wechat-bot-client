@@ -1,10 +1,9 @@
-import Ajv, { JSONSchemaType, str } from "ajv";
-import { asEnum } from "../utils/tool";
-import { BaseWechatClient } from "../wechat/wechat_client";
-import { ISysCallRequest } from "./sys_call";
-import { getModuleConfig, saveModuleConfig } from "./sys_config";
-import { getNickById, syncGroupUser, syncUserList } from "./sys_contact";
-import { chatroomRegex } from "../wechat/base_wechat";
+import Ajv from "ajv";
+import {asEnum} from "#/utils/tool";
+import {BaseWechatClient} from "#wechat/clients/wechat_client";
+import {ISysCallRequest} from "./sys_call";
+import {getModuleConfig, getModulePriority, saveModuleConfig} from "./sys_config";
+import {getNickById, syncGroupUser, syncUserList} from "./sys_contact";
 
 export enum SysCallMethodEnum {
     syncUserList = "syncUserList",
@@ -12,6 +11,7 @@ export enum SysCallMethodEnum {
     getConfig = "getConfig",
     saveConfig = "saveConfig",
     getNameById = "getNameById",
+    getModulePriority = "getModulePriority",
 }
 
 interface Command {
@@ -42,7 +42,7 @@ class GetConfigCommand implements Command {
     static moduleConfigSchema = this.ajv.compile({
         type: "object",
         properties: {
-            body: { 
+            body: {
                 type: "object",
                 properties: {
                     userId: { type: "string" },
@@ -124,7 +124,7 @@ class SaveConfigCommand implements Command {
     }
 }
 
-class getNameByIdCommand implements Command {
+class GetNameByIdCommand implements Command {
     static ajv = new Ajv();
     static schema = this.ajv.compile({
         type: "object",
@@ -135,7 +135,7 @@ class getNameByIdCommand implements Command {
                     userId: { type: "string" },
                     groupId: {
                         type: "string",
-                        pattern: chatroomRegex,
+                        pattern: "^\\d{4,15}@chatroom$",
                     },
                 },
                 additionalProperties: false,
@@ -155,8 +155,8 @@ class getNameByIdCommand implements Command {
         additionalProperties: true,
     });
     async execute(client: BaseWechatClient, request: ISysCallRequest): Promise<any> {
-        if (!getNameByIdCommand.schema(request)) {
-            let errorMessage = getNameByIdCommand.schema.errors?.map(item => item.message).join('\n');
+        if (!GetNameByIdCommand.schema(request)) {
+            let errorMessage = GetNameByIdCommand.schema.errors?.map(item => item.message).join('\n');
             throw new Error(`request validate not pass...${errorMessage}`);
         }
         return await getNickById(client, request.body);
@@ -166,12 +166,55 @@ class getNameByIdCommand implements Command {
     }
 }
 
+class GetModulePriorityCommand implements Command {
+    static ajv = new Ajv();
+    static schema = this.ajv.compile({
+        type: "object",
+        properties: {
+            body: {
+                type: "object",
+                properties: {
+                    userId: {
+                        type: "string",
+                    },
+                    groupId: {
+                        type: "string",
+                        pattern: "^\\d{4,15}@chatroom$",
+                    },
+                },
+                additionalProperties: false,
+            },
+            headers: {
+                type: "object",
+                properties: {
+                    moduleId: { type: "string" }
+                },
+                required: ["moduleId"],
+            },
+            requestId: { type: "string" },
+            router: { type: "string" },
+        },
+        required: ["router", "requestId", "headers"],
+    });
+    async execute(client: BaseWechatClient, request: ISysCallRequest): Promise<any> {
+        if (!GetModulePriorityCommand.schema(request)) {
+            let errorMessage = GetModulePriorityCommand.schema.errors?.map(item => item.message).join('\n');
+            throw new Error(`request validate not pass...${errorMessage}`);
+        }
+        return await getModulePriority(client, request.headers.moduleId, request.body);
+    }
+    match(e: SysCallMethodEnum): boolean {
+        return  e === SysCallMethodEnum.getModulePriority;
+    }
+}
+
 const commands: Command[] = [
     new SyncUserListCommand(),
     new SyncGroupUserCommand(),
     new GetConfigCommand(),
     new SaveConfigCommand(),
-    new getNameByIdCommand(),
+    new GetNameByIdCommand(),
+    new GetModulePriorityCommand(),
 ];
 
 export async function callSysMethod(client: BaseWechatClient, request: ISysCallRequest) {

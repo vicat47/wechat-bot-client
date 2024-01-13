@@ -1,14 +1,17 @@
-import { AxiosInstance } from "axios";
-import { SysCallStatusEnum } from "../../../../system/sys_call";
-import BaseWechatMessage, { BaseConfigService } from "../../../../wechat/base_wechat";
-import { IAiChatChatGptServiceConfig, IAiChatConfig, IAiChatServiceConfig } from "../../config";
-import { HistoryManager, BaseAiChatService, IMessage } from "../../lib";
-import { AiChatService } from "../../service";
-import { IChatGPTReply, IChatGPTSendMessage } from "./api";
-import restServiceFactory from "./request";
-import { IWechatWebRequestService } from "../../../../config";
-import { AiChatConfigDecorator } from "../lib";
+import {AxiosInstance} from "axios";
 
+import {IWechatWebRequestServiceConfig} from "#/config";
+import {SysCallStatusEnum} from "#system/sys_call";
+import BaseWechatMessage from "#wechat/base_wechat";
+
+import {IAiChatChatGptServiceConfig} from "#modules/ai_chat/config";
+import {BaseAiChatService, HistoryManager, IMessage} from "#modules/ai_chat/lib";
+import {AiChatService} from "#modules/ai_chat/service";
+import {AiChatConfigDecorator} from "#modules/ai_chat/channel/lib";
+
+import {IChatGPTReply, IChatGPTSendMessage} from "./api";
+import restServiceFactory from "./request";
+import {BaseConfigService} from "#wechat/config_service/base_config";
 
 class ChatGptHistoryManager extends HistoryManager<IMessage> {
     setPrompt(target: string, prompt: string): boolean {
@@ -56,14 +59,15 @@ export class ChatGptService extends BaseAiChatService {
     private readonly configService: BaseConfigService;
     private readonly chatService: AiChatService;
     private readonly requestApiService: AxiosInstance;
-    constructor(processService: AiChatService, configService: BaseConfigService, config: IWechatWebRequestService) {
+
+    constructor(processService: AiChatService, configService: BaseConfigService, config: IWechatWebRequestServiceConfig) {
         super(new ChatGptHistoryManager());
         this.chatService = processService;
 
         let wrappedConfigService = new AiChatConfigDecorator(configService);
         wrappedConfigService.modelType = ChatGptService.modelType;
         this.configService = wrappedConfigService;
-        
+
         this.requestApiService = restServiceFactory(config)();
     }
 
@@ -76,33 +80,39 @@ export class ChatGptService extends BaseAiChatService {
         if (config.prompt !== undefined) {
             this.historyManager.setPrompt(target, config.prompt);
         }
-        
+
         let currentCommunication = {
             role: "user",
             content: content,
         };
-        
-        let history = this.historyManager.get(target);
-        if (history === undefined) {
-            history = [currentCommunication];
+
+        let currentMessage = this.historyManager.get(target);
+        if (currentMessage === undefined) {
+            currentMessage = [currentCommunication];
+        } else {
+            currentMessage.push(currentCommunication);
         }
 
         let sendData: IChatGPTSendMessage = {
             model: config.module,
-            messages: history,
+            messages: currentMessage,
         }
-        
+
         let aiReply = await this.requestApiService.post<IChatGPTReply>('', sendData)
             .then(d => d.data)
             .catch(e => {
-                console.error(e);
+                console.error(e.data);
             });
         if (aiReply === undefined || aiReply === null) {
             return ["服务网络波动，请稍后重试！"];
         }
+        if (aiReply.choices[0].message.content === undefined || aiReply.choices[0].message.content === null) {
+            console.error(aiReply);
+            return ["服务出错，请联系管理员"];
+        }
         this.historyManager.append(target, currentCommunication);
-        this.saveToken(message, aiReply);
-        history = this.historyManager.append(target, {
+        await this.saveToken(message, aiReply);
+        let history = this.historyManager.append(target, {
             role: "assistant",
             content: aiReply.choices[0].message.content,
         });

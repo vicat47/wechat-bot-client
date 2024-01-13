@@ -1,7 +1,7 @@
-import { IWechatRoomService, WechatBoardcastService } from "../../config";
-import { Rule } from "../../utils/schedule";
+import {IWechatBroadcastServiceConfig, IWechatRoomServiceConfig} from "#/config";
+import {Rule} from "#/utils/schedule";
 
-export interface IFishConfig extends IWechatRoomService, WechatBoardcastService {
+export interface IFishConfig extends IWechatRoomServiceConfig, IWechatBroadcastServiceConfig {
     payDay: number;
     workStartTime: string;
     workEndTime: string;

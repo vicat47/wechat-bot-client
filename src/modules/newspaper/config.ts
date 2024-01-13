@@ -1,6 +1,6 @@
-import { IWechatWebRequestService, WechatBoardcastService, IWechatRoomService } from "../../config"
+import {IWechatBroadcastServiceConfig, IWechatRoomServiceConfig, IWechatWebRequestServiceConfig} from "#/config";
 
-export interface IMorningNewspaperConfig extends IWechatRoomService, WechatBoardcastService, IWechatWebRequestService {
+export interface IMorningNewspaperConfig extends IWechatRoomServiceConfig, IWechatBroadcastServiceConfig, IWechatWebRequestServiceConfig {
     api: string
     localFileName: string
 }

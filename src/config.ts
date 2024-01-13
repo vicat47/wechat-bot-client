@@ -1,4 +1,9 @@
-import { AxiosProxyConfig } from "axios";
+import {AxiosProxyConfig} from "axios";
+
+export enum StrBoolEnum {
+  TRUE = "1",
+  FALSE = "0"
+}
 
 export interface IWechatConfig {
   webSocketUrl: string;
@@ -8,20 +13,26 @@ export interface IWechatConfig {
   id: string;
 }
 
-export interface IWechatService {
+export interface IBaseWechatServiceConfig {
   id: string;
+  /**
+   * 在群组中是否为默认服务
+   *   0 - 不是
+   *   1 - 是
+   */
+  default?: '0' | '1';
 }
 
-export interface IWechatRoomService extends IWechatService {
+export interface IWechatRoomServiceConfig extends IBaseWechatServiceConfig {
   attachedRoomId: string[];
   singleContactWhiteList?: string[];
 }
 
-export interface WechatBoardcastService extends IWechatService {
-  boardcastRoomIds: string[];
+export interface IWechatBroadcastServiceConfig extends IBaseWechatServiceConfig {
+  broadcastRoomIds: string[];
 }
 
-export interface IWechatWebRequestService extends IWechatService {
+export interface IWechatWebRequestServiceConfig extends IBaseWechatServiceConfig {
   baseUrl: string;
   auth?: any;
   headers?: any;
@@ -29,7 +40,7 @@ export interface IWechatWebRequestService extends IWechatService {
   proxy?: AxiosProxyConfig;
 }
 
-export interface ISubscriptionsMessageConfig extends IWechatRoomService, WechatBoardcastService {
+export interface ISubscriptionsMessageServiceConfig extends IWechatRoomServiceConfig, IWechatBroadcastServiceConfig {
   subscriptionId: string;
   content_selector: string;
   localFileName?: string;

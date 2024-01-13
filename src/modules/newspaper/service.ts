@@ -1,13 +1,15 @@
-import serviceFactory from "../../alapi/request";
-
-import fs from 'fs'
+import fs from "fs";
 import dayjs from "dayjs";
-import base_wechat, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
-import { AxiosInstance } from "axios";
-import { IMorningNewspaperConfig } from "./config";
-import path from 'path'
-import config from "config";
-import { IWechatConfig } from "../../config";
+import path from "path";
+
+import {AxiosInstance} from "axios";
+
+import {IWechatConfig} from "#/config";
+import base_wechat from "#wechat/base_wechat";
+import serviceFactory from "#/alapi/request";
+
+import {IMorningNewspaperConfig} from "./config";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
 
 export const serviceCode = path.basename(__dirname);
 
@@ -32,13 +34,14 @@ function newspaperDataFormat(newspaper: NewspaperData): string {
     return `【📰】今天是 ${ theNewsDay }，60 秒了解世界。\n ${ newspaper.news.join('\n') }\n${ newspaper.weiyu }`
 }
 
-class NewspaperService extends BaseWechatMessageProcessService {
-    config: IMorningNewspaperConfig;
+class NewspaperService extends LocalWechatMessageProcessService {
+    public readonly handleNext = false;
+    serviceConfig: IMorningNewspaperConfig;
     service: AxiosInstance;
     serviceCode: string = serviceCode;
     constructor(clientConfig: IWechatConfig, config: IMorningNewspaperConfig) {
         super(clientConfig, config);
-        this.config = config;
+        this.serviceConfig = config;
         this.service = serviceFactory.createService(config);
     }
 
@@ -52,33 +55,24 @@ class NewspaperService extends BaseWechatMessageProcessService {
     getServiceName(): string {
         return "早间新闻服务";
     }
-    getUseage(): string {
+
+    getUsage(): string {
         return "回复关键字 新闻"
     }
-    async getTopics(): Promise<string[]> {
-        let topicList = [];
-        topicList.push(...this.config.attachedRoomId.map(roomId => {
-            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
-        }));
-        for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
-        }
-        return topicList;
-    }
-    
+
     getLocalCache(date: string): NewspaperData | undefined {
-        if (this.config.localFileName === undefined) {
+        if (this.serviceConfig.localFileName === undefined) {
             return;
         }
-        return JSON.parse(fs.readFileSync(`./data/${this.config.localFileName}_${date}.json`, 'utf8')) as NewspaperData;
+        return JSON.parse(fs.readFileSync(`./data/${this.serviceConfig.localFileName}_${date}.json`, 'utf8')) as NewspaperData;
     }
-    
+
     saveLocalCache(newspaper: NewspaperData) {
-        if (this.config.localFileName === undefined) {
+        if (this.serviceConfig.localFileName === undefined) {
             return;
         }
         try {
-            fs.writeFileSync(`./data/${this.config.localFileName}_${newspaper.date}.json`, JSON.stringify(newspaper));
+            fs.writeFileSync(`./data/${this.serviceConfig.localFileName}_${newspaper.date}.json`, JSON.stringify(newspaper));
         } catch (err) {
             console.error(err);
         }
@@ -94,7 +88,7 @@ class NewspaperService extends BaseWechatMessageProcessService {
         } catch (e) {
             console.log("新闻：本地无缓存");
         }
-        
+
         try {
             let newspaper = await this.service.get<NewspaperData>('zaobao');
             this.saveLocalCache(newspaper.data)
@@ -103,7 +97,7 @@ class NewspaperService extends BaseWechatMessageProcessService {
             let errMsg = (e as Error).message;
             content = errMsg;
         }
-    
+
         if (content === undefined) {
             content = "还没有新闻呢"
         }

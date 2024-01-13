@@ -1,12 +1,16 @@
-import { AxiosInstance } from "axios";
-import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
-import { IDiffusionParam, IStableDiffusionResponse } from "./api";
-import { IStableDiffusionConfig } from "./config";
-import {StableDiffusionServiceFactory, ImageSendServiceFactory} from "./request";
-import path from 'path'
-import config from "config";
-import { IWechatConfig } from "../../config";
-import { getClientName } from "../../system/sys_config";
+import path from "path";
+
+import {AxiosInstance} from "axios";
+
+import {IWechatConfig} from "#/config";
+import {getClientName} from "#system/sys_config";
+import BaseWechatMessage from "#wechat/base_wechat";
+
+import {IDiffusionParam, IStableDiffusionResponse} from "./api";
+import {IStableDiffusionConfig} from "./config";
+import {ImageSendServiceFactory, StableDiffusionServiceFactory} from "./request";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
+
 
 export const serviceCode = path.basename(__dirname);
 
@@ -21,7 +25,8 @@ export const serviceCode = path.basename(__dirname);
 const regex = `AI画图[\n|\s]+(.+)\n+(.+)`;
 const contentRegex = new RegExp(regex);
 
-class StableDiffusionService extends BaseWechatMessageProcessService {
+class StableDiffusionService extends LocalWechatMessageProcessService {
+    public readonly handleNext = false;
     serviceCode: string = serviceCode;
 
     private readonly requestService;
@@ -34,7 +39,7 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
     }
 
     async canProcess(message: BaseWechatMessage): Promise<boolean> {
-        let config = this.config as IStableDiffusionConfig;
+        let config = this.serviceConfig as IStableDiffusionConfig;
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -60,7 +65,7 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
         }
         // 去掉 @
         let content = message.content.replace(`@${getClientName(this.clientId)} `, '').trim();
-        
+
         let result = contentRegex.exec(content);
         if (result === null) {
             return false;
@@ -104,20 +109,10 @@ class StableDiffusionService extends BaseWechatMessageProcessService {
         return 'AI 绘图 bot';
     }
 
-    getUseage(): string {
+    getUsage(): string {
         return '使用 “AI画图 正向标签\n逆向标签”'
     }
 
-    async getTopics(): Promise<string[]> {
-        let topicList = [];
-        topicList.push(...(this.config as IStableDiffusionConfig).attachedRoomId.map(roomId => {
-            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
-        }));
-        for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
-        }
-        return topicList;
-    }
 }
 
 export function register(wechatConfig: IWechatConfig, chatgptConfig: IStableDiffusionConfig): StableDiffusionService {

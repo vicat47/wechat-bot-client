@@ -1,9 +1,9 @@
-import { AppDataSource } from "../data_source";
-import { SysGroup } from "../entity/SysGroup";
-import { SysUser } from "../entity/SysUser";
-import { SysUserGroup } from "../entity/SysUserGroup";
-import { chatroomRegex, subscriptionRegex } from "../wechat/base_wechat";
-import { BaseWechatClient } from "../wechat/wechat_client";
+import {AppDataSource} from "#/data_source";
+import {SysGroup} from "#entity/SysGroup";
+import {SysUser} from "#entity/SysUser";
+import {SysUserGroup} from "#entity/SysUserGroup";
+import {BaseWechatClient} from "#wechat/clients/wechat_client";
+import {chatroomRegex, subscriptionRegex} from "#wechat/util";
 
 const groupRepo = AppDataSource.getRepository(SysGroup);
 const userRepo = AppDataSource.getRepository(SysUser);

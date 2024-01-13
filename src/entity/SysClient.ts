@@ -1,5 +1,5 @@
-import { Column, Entity, PrimaryColumn } from "typeorm";
-import { IWechatConfig } from "../config";
+import {Column, Entity, PrimaryColumn} from "typeorm";
+import {IWechatConfig} from "#/config";
 
 @Entity()
 export class SysClient implements IWechatConfig {

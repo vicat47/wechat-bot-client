@@ -1,8 +1,8 @@
-import axios, { AxiosInstance } from 'axios';
-import { IWechatWebRequestService } from '../../config';
+import axios, {AxiosInstance} from "axios";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
 class JenkinsServiceFactory {
-    public static createService(config: IWechatWebRequestService): AxiosInstance {
+    public static createService(config: IWechatWebRequestServiceConfig): AxiosInstance {
         let service = axios.create({
             baseURL: config.baseUrl,
             withCredentials: true, // send cookies when cross-domain requests

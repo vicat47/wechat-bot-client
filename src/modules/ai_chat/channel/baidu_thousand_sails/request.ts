@@ -1,6 +1,6 @@
-import axios, { AxiosInstance } from 'axios';
-import { IBaiduThousandSailsApiConfig } from './config';
-import NodeCache from 'node-cache';
+import axios, {AxiosInstance} from "axios";
+import {IBaiduThousandSailsApiConfig} from "./config";
+import NodeCache from "node-cache";
 
 export default function restServiceFactory(config: IBaiduThousandSailsApiConfig): () => AxiosInstance {
     return function(): AxiosInstance {
@@ -30,7 +30,7 @@ export default function restServiceFactory(config: IBaiduThousandSailsApiConfig)
             // withCredentials: true, // send cookies when cross-domain requests
             timeout: 60_000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             async cfg => {
                 if (cfg.url && cfg.url.includes('/token')) {
@@ -53,7 +53,7 @@ export default function restServiceFactory(config: IBaiduThousandSailsApiConfig)
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 return response;
@@ -64,7 +64,7 @@ export default function restServiceFactory(config: IBaiduThousandSailsApiConfig)
                 return Promise.reject(error);
             }
         );
-        
+
         return service;
     }
 }

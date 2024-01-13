@@ -1,14 +1,14 @@
-import axios, { AxiosInstance } from 'axios';
-import { IWechatWebRequestService } from '../../config';
+import axios, {AxiosInstance} from "axios";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
 export class StableDiffusionServiceFactory {
-    public static createService(config: IWechatWebRequestService): AxiosInstance {
+    public static createService(config: IWechatWebRequestServiceConfig): AxiosInstance {
         const service = axios.create({
             baseURL: config.baseUrl,
             // withCredentials: true, // send cookies when cross-domain requests
             timeout: 300_000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             cfg => {
                 return cfg;
@@ -19,7 +19,7 @@ export class StableDiffusionServiceFactory {
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 return response;
@@ -34,13 +34,13 @@ export class StableDiffusionServiceFactory {
 }
 
 export class ImageSendServiceFactory {
-    public static createService(config: IWechatWebRequestService): AxiosInstance {
+    public static createService(config: IWechatWebRequestServiceConfig): AxiosInstance {
         const service = axios.create({
             baseURL: config.baseUrl,
             // withCredentials: true, // send cookies when cross-domain requests
             timeout: 10_000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             cfg => {
                 return cfg;
@@ -51,7 +51,7 @@ export class ImageSendServiceFactory {
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 return response;

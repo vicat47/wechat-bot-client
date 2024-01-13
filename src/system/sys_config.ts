@@ -1,11 +1,11 @@
-import { In } from "typeorm";
-import { IWechatConfig } from "../config";
-import { AppDataSource } from "../data_source";
-import { SysClient } from "../entity/SysClient";
-import { SysConfig } from "../entity/SysConfig";
-import { SysModule } from "../entity/SysModule";
-import { SysModuleConfig } from "../entity/SysModuleConfig";
-import { asEnum, mergeDeep } from "../utils/tool";
+import {In} from "typeorm";
+import {AppDataSource} from "#/data_source";
+import {SysClient} from "#entity/SysClient";
+import {SysConfig} from "#entity/SysConfig";
+import {SysModule} from "#entity/SysModule";
+import {SysModuleConfig} from "#entity/SysModuleConfig";
+import {asEnum, mergeDeep} from "#/utils/tool";
+import {BaseWechatClient} from "#wechat/clients/wechat_client";
 
 const configRepository = AppDataSource.getRepository(SysConfig);
 const moduleRepository = AppDataSource.getRepository(SysModule);
@@ -45,6 +45,18 @@ export async function getClientName(id: string): Promise<string | undefined> {
                 id
             }
         }))?.name;
+}
+
+export async function getModulePriority(client: BaseWechatClient, moduleId: string, options?: {
+    userId?: string,
+    groupId?: string,
+}) {
+    // TODO: 根据不同群获取不同优先级
+    return (await moduleRepository.findOne({
+        where: {
+            id: moduleId,
+        }
+    }))?.priority;
 }
 
 /**
@@ -89,7 +101,7 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
         }
         return acc;
     }, {} as {[k: string]: string});
-    
+
     let configs = Object.keys(options.configs)
         .map(k => {
             let conf = new SysModuleConfig();
@@ -122,7 +134,7 @@ export async function saveModuleConfig(moduleId: string, options: IBaseClientSet
  * @returns 返回获取的模块列表
  */
 export async function getClientModuleConfig(clientId: string, options?: IClientConfigOption): Promise<SysModule[]> {
-    let moduleConfigList = await moduleRepository.find({
+    return await moduleRepository.find({
         relations: {
             configs: true
         },
@@ -132,11 +144,10 @@ export async function getClientModuleConfig(clientId: string, options?: IClientC
             moduleCode: options?.moduleCode,
             configs: {
                 enable: EnableStatus.ENABLE,
-                key: options?.keys === undefined ? undefined: In(options.keys),
+                key: options?.keys === undefined ? undefined : In(options.keys),
             },
         }
     });
-    return moduleConfigList;
 }
 
 interface ISysModuleObjectConfig extends SysModule {
@@ -162,13 +173,13 @@ export async function getClientModuleGlobalConfig(clientId: string, options?: IC
  *      返回
  *    群聊配置 => 用户 = null, 群 != null
  *      群中用户配置 => 用户 != null, 群 != null
- * @param clientId 微信客户端ID
+ * @param moduleId 模块 ID
  * @param options 配置项
  *  moduleCode 模块的 Code
  *  userId 用户ID
  *  groupId 群组ID
  *  key 要查的 key
- * @returns 
+ * @returns
  */
 export async function getModuleConfig(moduleId: string, options?: IBaseClientGetConfigOption): Promise<any> {
     let moduleConfig = await moduleRepository.findOne({
@@ -184,23 +195,22 @@ export async function getModuleConfig(moduleId: string, options?: IBaseClientGet
             }
         }
     });
+    // TODO: 没有详细配置项的模块无法启动
     if (moduleConfig === undefined || moduleConfig === null) {
         return undefined;
     }
     let cfg = generateModuleConfig(moduleConfig.configs, options)[moduleId] as {
         [k: string]: any
-    };
+    } ?? {};
+    cfg.id = moduleId;
+    cfg.priority = moduleConfig.priority;
     return cfg;
 }
 
 function generateModuleConfig(moduleConfigList: SysModuleConfig[], options?: IBaseClientGetConfigOption) {
     let moduleConfig: IModuleConfig = {}
-    // 全局配置
-    if (options === undefined) {
-        moduleConfigList.forEach(item => updateByKeyLevel(moduleConfig, item));
-        return moduleConfig;
-    }
     moduleConfigList
+        // TODO: 这里有 bug, moduleId 在筛选的列表中没有会出问题，这里会筛到啥也没有的东西，连带着函数返回值是空对象，并导致上面 cfg 为 undefined
         .filter(c => c.userId === null && c.groupId === null)
         .forEach(item => updateByKeyLevel(moduleConfig, item));
     if (options?.userId === undefined && options?.groupId === undefined) {

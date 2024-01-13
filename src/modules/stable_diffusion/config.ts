@@ -1,6 +1,6 @@
-import { IWechatWebRequestService, IWechatRoomService } from "../../config";
+import {IWechatRoomServiceConfig, IWechatWebRequestServiceConfig} from "#/config";
 
-export interface IStableDiffusionConfig extends IWechatRoomService {
-    stableService: IWechatWebRequestService;
-    imageService: IWechatWebRequestService;
+export interface IStableDiffusionConfig extends IWechatRoomServiceConfig {
+    stableService: IWechatWebRequestServiceConfig;
+    imageService: IWechatWebRequestServiceConfig;
 }

@@ -1,14 +1,14 @@
-import axios, { AxiosInstance } from 'axios';
-import { IWechatWebRequestService } from '../../config';
+import axios, {AxiosInstance} from "axios";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
 class HomeAssistantServiceFactory {
-    public static createService(config: IWechatWebRequestService): AxiosInstance {
+    public static createService(config: IWechatWebRequestServiceConfig): AxiosInstance {
         const service = axios.create({
             baseURL: '',
             // withCredentials: true, // send cookies when cross-domain requests
             timeout: 10000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             cfg => {
                 // do something before request is sent
@@ -21,7 +21,7 @@ class HomeAssistantServiceFactory {
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 return response;

@@ -1,4 +1,4 @@
-import { HttpType } from "../request"
+import {HttpType} from "#wechat/request";
 
 enum WeChatMessageType {
     PERSONAL_INFO = 1,

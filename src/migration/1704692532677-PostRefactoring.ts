@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table } from "typeorm"
+import {MigrationInterface, QueryRunner, Table} from "typeorm"
 
 export class PostRefactoring1704692532677 implements MigrationInterface {
 
@@ -28,10 +28,8 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                 columns: [
                     {
                         name: "id",
-                        type: "integer",
+                        type: "varchar",
                         isPrimary: true,
-                        isGenerated: true,
-                        generationStrategy: "increment",
                         comment: "id"
                     },
                     {
@@ -44,7 +42,8 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                     },
                     {
                         name: "mqtt_url",
-                        type: "varchar"
+                        type: "varchar",
+                        isNullable: true,
                     },
                     {
                         name: "name",
@@ -188,11 +187,13 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                     },
                     {
                         name: "user_id",
-                        type: "varchar"
+                        type: "varchar",
+                        isNullable: true,
                     },
                     {
                         name: "group_id",
-                        type: "varchar"
+                        type: "varchar",
+                        isNullable: true,
                     },
                     {
                         name: "type",

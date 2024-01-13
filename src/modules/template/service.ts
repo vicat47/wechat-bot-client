@@ -1,11 +1,14 @@
-import { AxiosInstance } from "axios";
+import path from "path";
+
+import {AxiosInstance} from "axios";
+
+import {IWechatConfig} from "#/config";
+import {getClientName} from "#system/sys_config";
+import BaseWechatMessage from "#wechat/base_wechat";
+
 import factory from "./request";
-import BaseWechatMessage, { BaseWechatMessageProcessService } from "../../wechat/base_wechat";
-import { ITemplateConfig } from "./config";
-import path from 'path'
-import config from "config";
-import { getClientName } from "../../system/sys_config";
-import { IWechatConfig } from "../../config";
+import {ITemplateConfig} from "./config";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
 
 export const serviceCode = path.basename(__dirname);
 
@@ -20,8 +23,8 @@ export const serviceCode = path.basename(__dirname);
 const regex = `templateHeader\s*(.+)`;
 const contentRegex = new RegExp(regex);
 
-class TemplateService extends BaseWechatMessageProcessService {
-
+class TemplateService extends LocalWechatMessageProcessService {
+    public readonly handleNext = false;
     public readonly serviceCode: string = serviceCode;
     private readonly service: AxiosInstance;
     constructor(clientConfig: IWechatConfig, config: ITemplateConfig) {
@@ -52,19 +55,8 @@ class TemplateService extends BaseWechatMessageProcessService {
         return '服务名称';
     }
 
-    getUseage(): string {
+    getUsage(): string {
         return '服务描述'
-    }
-
-    async getTopics(): Promise<string[]> {
-        let topicList = [];
-        topicList.push(...(this.config as ITemplateConfig).attachedRoomId.map(roomId => {
-            return `wechat/${ this.clientId }/receve/groups/${ roomId }/#`
-        }));
-        for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-            topicList.push(`wechat/${ this.clientId }/receve/users/${ adminUser }/#`);
-        }
-        return topicList;
     }
 }
 

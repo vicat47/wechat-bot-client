@@ -1,18 +1,25 @@
-import BaseWechatMessage, { BaseConfigService, IWechatMqttSendMessage, LocalWechatMessageProcessService, SysCallConfigService, WechatMessageTypeEnum, isGroup, isUser } from "../../wechat/base_wechat";
-import { IWatchdogConfig } from "./config";
-import path from 'path'
-import { IWechatConfig } from "../../config";
-import { SysCallStatusEnum, generateRequestId } from "../../system/sys_call";
-import { IBaseBehaviorContext, behaviorFactory } from "./behavior";
-import { SysCallMethodEnum } from "../../system/api";
+import path from "path";
+import Ajv from "ajv";
+
+import BaseWechatMessage from "#wechat/base_wechat";
+import {IWechatConfig} from "#/config";
+import {generateRequestId, SysCallStatusEnum} from "#system/sys_call";
+import {SysCallMethodEnum} from "#system/api";
+
+import {IWatchdogConfig, moduleConfigSchema} from "./config";
+import {behaviorFactory, IBaseBehaviorContext} from "./behavior";
+import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
+import {BaseConfigService} from "#wechat/config_service/base_config";
+import {SysCallConfigService} from "#wechat/config_service/service/sys_call_config_service";
 
 export const serviceCode = path.basename(__dirname);
 
 class WatchdogService extends LocalWechatMessageProcessService {
-
+    public readonly handleNext = false;
     public readonly serviceCode: string = serviceCode;
     private readonly configService: BaseConfigService;
     private readonly behaviorFactory;
+    private readonly configValidatorSchema = new Ajv().compile(moduleConfigSchema);
 
     constructor(clientConfig: IWechatConfig, config: IWatchdogConfig) {
         super(clientConfig, config);
@@ -28,7 +35,13 @@ class WatchdogService extends LocalWechatMessageProcessService {
         if (configResp.status !== SysCallStatusEnum.SUCCESS) {
             return false;
         }
-        let msgReg = new RegExp(configResp.body.regex)
+
+        if (!this.configValidatorSchema(configResp.body)) {
+            this.configValidatorSchema.errors?.map(item => item.message).join('\n')
+            return false;
+        }
+
+        let msgReg = new RegExp(configResp.body.regex);
         if (typeof message.content !== 'string') {
             return false;
         }
@@ -78,8 +91,8 @@ class WatchdogService extends LocalWechatMessageProcessService {
         if (message.senderId === this.clientId) {
             return null;
         }
-        
-        let configResp = await this.configService.getConfig<IWatchdogConfig>();
+
+        let configResp = await this.configService.getTargetConfig<IWatchdogConfig>(message);
         if (configResp.status !== SysCallStatusEnum.SUCCESS) {
             return null;
         }
@@ -88,7 +101,7 @@ class WatchdogService extends LocalWechatMessageProcessService {
 
         let behavior = this.behaviorFactory(config.behavior, config, context);
         let result = behavior?.execute(message);
-        
+
         let [groupUserNick, groupName] = await Promise.all([this.systemCall({
             body: {
                 groupId: message.groupId,
@@ -110,6 +123,7 @@ class WatchdogService extends LocalWechatMessageProcessService {
             }
         })]);
 
+        // FIXME: 现在只要监视的群会走任何人任何群的规则，不论群 ID
         let sourceUserString: string|undefined = undefined;
         let sourceGroupString: string|undefined = undefined;
         if (message.groupId && message.senderId) {
@@ -118,7 +132,7 @@ class WatchdogService extends LocalWechatMessageProcessService {
         if ((message.groupId === undefined || message.groupId === null) && message.senderId) {
             sourceUserString = `来自 ${groupUserNick.body ?? "unknown"} 的`
         }
-        
+
         let postProcessor = config.postProcessor;
         if (result !== undefined && postProcessor !== undefined && postProcessor !== null) {
             const postProcessFunc = new Function("config", "context", "message", postProcessor);
@@ -139,17 +153,10 @@ class WatchdogService extends LocalWechatMessageProcessService {
         return '看门狗服务';
     }
 
-    getUseage(): string {
+    getUsage(): string {
         return '被动监听群内消息并做出操作';
     }
 
-    async getTopics(): Promise<string[]> {
-        let topicList: string[] = [
-            `wechat/${this.clientId}/receve/users/#`,
-            `wechat/${this.clientId}/receve/groups/#`,
-        ];
-        return topicList;
-    }
 }
 
 export function register(wechatConfig: IWechatConfig, chatgptConfig: IWatchdogConfig): WatchdogService {

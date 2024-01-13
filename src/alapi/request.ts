@@ -1,14 +1,14 @@
 import axios from "axios";
-import { IWechatWebRequestService } from "../config";
+import {IWechatWebRequestServiceConfig} from "#/config";
 
 class AlApiServiceFactory {
-    public static createService(config: IWechatWebRequestService) {
+    public static createService(config: IWechatWebRequestServiceConfig) {
         let service = axios.create({
             baseURL: config.baseUrl,
             withCredentials: true, // send cookies when cross-domain requests
             timeout: 10000 // request timeout
         });
-        
+
         service.interceptors.request.use(
             cfg => {
                 // do something before request is sent
@@ -21,7 +21,7 @@ class AlApiServiceFactory {
                 return Promise.reject(error);
             }
         );
-        
+
         service.interceptors.response.use(
             response => {
                 // if the custom code is not 20000, it is judged as an error.

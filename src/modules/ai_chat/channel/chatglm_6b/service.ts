@@ -1,10 +1,12 @@
-import { AxiosInstance } from "axios";
-import { BaseAiChatService, HistoryManager, IMessage } from "../../lib";
-import restServiceFactory from "./request";
-import { IWechatWebRequestService } from "../../../../config";
-import { AiChatService } from "../../service";
-import BaseWechatMessage from "../../../../wechat/base_wechat";
+import {AxiosInstance} from "axios";
 
+import {IWechatWebRequestServiceConfig} from "#/config";
+import BaseWechatMessage from "#wechat/base_wechat";
+
+import {BaseAiChatService, HistoryManager, IMessage} from "#modules/ai_chat/lib";
+import {AiChatService} from "#modules/ai_chat/service";
+
+import restServiceFactory from "./request";
 
 class ChatGlmHistoryManager extends HistoryManager<IMessage> {
     setPrompt(target: string, prompt: string): boolean {
@@ -52,10 +54,10 @@ export class ChatGlmService extends BaseAiChatService {
     private readonly requestApiService: AxiosInstance;
     private readonly chatService: AiChatService;
 
-    constructor(chatService: AiChatService, config: IWechatWebRequestService) {
+    constructor(chatService: AiChatService, config: IWechatWebRequestServiceConfig) {
         super(new ChatGlmHistoryManager());
         this.chatService = chatService;
-        this.requestApiService = restServiceFactory(config)();        
+        this.requestApiService = restServiceFactory(config)();
     }
 
     async chat(message: BaseWechatMessage, content: string, target: string): Promise<string[]> {
