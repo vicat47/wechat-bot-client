@@ -1,3 +1,5 @@
+import {snowflake} from "#/app";
+
 const roomIdSplitter = "@"
 
 export enum WechatMessageType {
@@ -37,8 +39,7 @@ class WeChatMessage {
     }
 
     getId(): string {
-        const id = Date.now();
-        return id.toString();
+        return snowflake.generate().toString();
     }
 
     toJSONString(): string {

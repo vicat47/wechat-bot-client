@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import "module-alias/register"
-import EventEmitter from "events";
 
 import load_modules from "#modules/load_modules";
 import {AppDataSource} from "#/data_source";
@@ -12,11 +11,6 @@ import WechatComClient from "#wechat/clients/wechat_com/wechat_com_client";
 import {BaseWechatClient} from "#wechat/clients/wechat_client";
 import {BaseWechatMessageProcessService} from "#wechat/message_processor/base_processor";
 import {Snowflake} from '@sapphire/snowflake';
-
-export interface GlobalClient {
-    client: BaseWechatClient,
-    eventEmitter: EventEmitter,
-}
 
 export const globalClient: {
     [clientId: string]: BaseWechatClient

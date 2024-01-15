@@ -1,4 +1,5 @@
 import NodeCache from "node-cache";
+import {snowflake} from "#/app";
 
 export enum SysCallStatusEnum {
     SUCCESS = 200,
@@ -45,7 +46,7 @@ requestCache.on("expired", (key, value) => {
 });
 
 export function generateRequestId(wechatId: string, serviceId?: string): string {
-    return `${wechatId}_${serviceId}_${String(Math.floor(Date.now()))}`;
+    return `${wechatId}_${serviceId}_${snowflake.generate().toString()}`;
 }
 
 export function savePromiseForRequestId(requestId: string, promise: any) {

@@ -1,7 +1,7 @@
 import {ISysCallResponse, SysCallStatusEnum} from "#system/sys_call";
 import BaseWechatMessage, {ISetConfig} from "#wechat/base_wechat";
 import {ChatGptService} from "#modules/ai_chat/channel/chatgpt/service";
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 
 export class AiChatConfigDecorator extends BaseConfigService {
     public modelType = ChatGptService.modelType;

@@ -13,8 +13,8 @@ import {ChatGptRequest} from "./entity";
 import {aiChatCommandFactory} from "./command";
 import {aiChatSigletonFactory} from "./channel/factory";
 import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
-import {BaseConfigService} from "#wechat/config_service/base_config";
-import {SysCallConfigService} from "#wechat/config_service/service/sys_call_config_service";
+import {BaseConfigService} from "#system/config_service/base_config";
+import {SysCallConfigService} from "#system/config_service/service/sys_call_config_service";
 
 const keyword = 'ai'
 const regex = `${keyword}\\s+([\\s\\S]+)`;

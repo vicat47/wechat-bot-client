@@ -11,7 +11,7 @@ import {AiChatConfigDecorator} from "#modules/ai_chat/channel/lib";
 
 import {IChatGPTReply, IChatGPTSendMessage} from "./api";
 import restServiceFactory from "./request";
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 
 class ChatGptHistoryManager extends HistoryManager<IMessage> {
     setPrompt(target: string, prompt: string): boolean {

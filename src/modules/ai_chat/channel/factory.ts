@@ -4,7 +4,7 @@ import {AiChatService} from "#modules/ai_chat/service";
 
 import {BaiduThousandSailsService} from "./baidu_thousand_sails/service";
 import {ChatGptService} from "./chatgpt/service";
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 
 export function aiChatSigletonFactory(param: {
     processService: AiChatService;

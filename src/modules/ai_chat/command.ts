@@ -1,6 +1,6 @@
 import BaseWechatMessage, {ISetConfig} from "#wechat/base_wechat";
 import {BaseAiChatService} from "#modules/ai_chat/lib";
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 
 enum Command {
     CONFIG = "/config",

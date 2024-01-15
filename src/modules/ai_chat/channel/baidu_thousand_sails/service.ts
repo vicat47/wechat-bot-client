@@ -11,7 +11,7 @@ import {AiChatConfigDecorator} from "#modules/ai_chat/channel/lib";
 import {IBaiduThousandSailsReply, IBaiduThousandSailsSendMessage} from "./api";
 import restServiceFactory from "./request";
 import {IBaiduThousandSailsApiConfig} from "./config";
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 
 
 export class BaiduThousandSailsHistoryManager extends HistoryManager<IMessage> {

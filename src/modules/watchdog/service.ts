@@ -9,8 +9,8 @@ import {SysCallMethodEnum} from "#system/api";
 import {IWatchdogConfig, moduleConfigSchema} from "./config";
 import {behaviorFactory, IBaseBehaviorContext} from "./behavior";
 import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
-import {BaseConfigService} from "#wechat/config_service/base_config";
-import {SysCallConfigService} from "#wechat/config_service/service/sys_call_config_service";
+import {BaseConfigService} from "#system/config_service/base_config";
+import {SysCallConfigService} from "#system/config_service/service/sys_call_config_service";
 
 export const serviceCode = path.basename(__dirname);
 

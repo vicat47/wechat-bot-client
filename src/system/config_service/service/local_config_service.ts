@@ -1,4 +1,4 @@
-import {BaseConfigService} from "#wechat/config_service/base_config";
+import {BaseConfigService} from "#system/config_service/base_config";
 import {generateRequestId, ISysCallResponse, SysCallStatusEnum} from "#system/sys_call";
 import config from "config";
 import BaseWechatMessage, {ISetConfig} from "#wechat/base_wechat";
