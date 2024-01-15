@@ -4,6 +4,16 @@ export interface IBaseContentMessage<T> {
 	type: number;
 }
 
+export interface IPersonalInfo {
+	id: string;
+	name: string;
+	code: string;
+	/**
+	 * 头像
+	 */
+	headImage: string;
+}
+
 /**
  * 用户
  */

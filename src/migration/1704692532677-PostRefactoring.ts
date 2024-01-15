@@ -3,6 +3,7 @@ import {MigrationInterface, QueryRunner, Table} from "typeorm"
 export class PostRefactoring1704692532677 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
+        console.log("will initialize database");
         console.log(`database type: ${queryRunner.connection.options.type}`);
         let cTimeFieldProvider;
         if (queryRunner.connection.options.type === "sqlite") {
@@ -209,6 +210,7 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
             }),
             true
         );
+        // TODO: 初始化: 插入 ding dong bot
         console.log("table 'sys_module_config' created");
         await queryRunner.createTable(
             new Table({

@@ -11,9 +11,7 @@ export default function restServiceFactory(config: IWechatWebRequestServiceConfi
 
         service.interceptors.request.use(
             cfg => {
-                cfg.headers = {
-                    Authorization: `Bearer ${config.auth.token}`
-                }
+                cfg.headers.setAuthorization(`Bearer ${config.auth.token}`);
                 cfg.proxy = config.proxy
                 return cfg;
             },

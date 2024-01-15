@@ -1,51 +1,39 @@
 import WebSocket from "ws";
 import config from "config";
-
-import * as mqtt from "mqtt";
 import {AxiosInstance} from "axios";
 
 import {IWechatConfig} from "#/config";
 import {BaseWechatClient} from "#wechat/clients/wechat_client";
 import {WechatXMLMessage} from "#wechat/xml_message";
-import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent} from "#wechat/data";
+import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IPersonalInfo, IUserContent} from "#wechat/data";
 import BaseWechatMessage, {WechatMessageTypeEnum} from "#wechat/base_wechat";
 import httpWechatServiceFactory from "#wechat/request";
 
 import WeChatMessage, {RecvMsg, WechatMessageType, XMLMessageContent} from "./wechat_laozhang";
 
 class WechatLaoZhangClient extends BaseWechatClient {
-    private _mqttClient: mqtt.MqttClient | undefined;
-    private websocket: WebSocket;
+    private websocket?: WebSocket;
+    private readonly websocketUrl: string;
     private readonly service: AxiosInstance;
 
     constructor(config: IWechatConfig) {
         super(config);
+        this.websocketUrl = config.webSocketUrl;
         this.service = httpWechatServiceFactory(config)();
-        this.websocket = new WebSocket(this.config.webSocketUrl);
-        this.websocket.on("message", this.onMessage());
-        this.websocket.on("close", this.onClose());
-    }
-
-    get mqttClient(): mqtt.MqttClient {
-        if (this._mqttClient === undefined) {
-            throw new Error("mqtt client not connected");
-        }
-        return this._mqttClient;
-    }
-
-    set mqttClient(mqttClient: mqtt.MqttClient) {
-        this._mqttClient = mqttClient;
     }
 
     async connect(): Promise<any> {
+        this.websocket = new WebSocket(this.websocketUrl);
+        this.websocket.on("message", this.onMessage());
+        this.websocket.on("close", this.onClose());
+        let websocket = this.websocket;
         let pList: Promise<any>[] = [];
         pList.push(super.connect());
         pList.push(new Promise<void>((resolve, reject) => {
-            this.websocket.on("open", async () => {
-                console.log(`websocket ${this.config.id} 已连接`);
-                await this.getMe();
+            websocket.on("open", async () => {
+                console.log(`websocket ${this.id} 已连接`);
                 for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-                    await this.sendTxtMsg(`wxid: ${this.config.id} 服务已启动，已连接`, adminUser);
+                    await this.sendTxtMsg(`wxid: ${this.id} 服务已启动，已连接`, adminUser);
                 }
                 resolve();
             });
@@ -54,14 +42,20 @@ class WechatLaoZhangClient extends BaseWechatClient {
         return await Promise.all(pList);
     }
 
-    async getMe(): Promise<any> {
+    async getMe(): Promise<IPersonalInfo> {
         let msg = WeChatMessage.personal_msg();
         let sendMsg = {
             para: msg
         }
         let res = await this.service.post("/api/get_personal_info", JSON.stringify(sendMsg));
-        console.log(res);
-        return res;
+        console.debug(res);
+        let json = JSON.parse(res.data.content);
+        return {
+            code: json.wx_code,
+            headImage: json.wx_head_image,
+            id: json.wx_id,
+            name: json.wx_name,
+        };
     }
 
     async getUserList(): Promise<IBaseContentMessage<IUserContent>> {
@@ -70,7 +64,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
             para: msg
         }
         const res = await this.service.post<IBaseContentMessage<IUserContent>>("/api/getcontactlist", JSON.stringify(sendMsg));
-        console.log(res);
+        console.debug(res);
         return res.data;
     }
 
@@ -80,7 +74,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
             para: msg
         }
         const res = await this.service.post<IBaseContentMessage<IGroupUserContent>>("/api/get_charroom_member_list", JSON.stringify(sendMsg));
-        console.log(res);
+        console.debug(res);
         return res.data;
     }
 
@@ -94,7 +88,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
             para: msg
         }
         const res = await this.service.post<IBaseContentMessage<any>>("/api/getmembernick", JSON.stringify(sendMsg));
-        console.log(res);
+        console.debug(res);
         if (typeof res.data.content !== 'string') {
             return res.data;
         }
@@ -143,7 +137,7 @@ class WechatLaoZhangClient extends BaseWechatClient {
         }
     }
 
-    onMessage(): (data: WebSocket.RawData) => Promise<void> {
+    protected onMessage(): (data: WebSocket.RawData) => Promise<void> {
         let that = this;
         return async (data) => {
             const j = JSON.parse(data.toString());

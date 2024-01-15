@@ -1,7 +1,7 @@
 import BaseWechatMessage, {ISystemMessage} from "#wechat/base_wechat";
 import {BaseWechatClient} from "#wechat/clients/wechat_client";
 import {IPublisher} from "#wechat/message_publisher/publish_interface";
-import {IWechatConfig} from "#/config";
+import {ManagerConfigType} from "#wechat/message_publisher/manager";
 
 /**
  * 消息处理与转发器
@@ -11,9 +11,20 @@ import {IWechatConfig} from "#/config";
  */
 export abstract class BaseMessagePublisher implements IPublisher {
     protected client: BaseWechatClient;
+    protected config: ManagerConfigType;
 
-    constructor(config: IWechatConfig, client: BaseWechatClient) {
+    constructor(config: ManagerConfigType, client: BaseWechatClient) {
+        this.config = config;
         this.client = client;
+    }
+
+    public update(config?: ManagerConfigType, client?: BaseWechatClient) {
+        if (config) {
+            this.config = config;
+        }
+        if (client) {
+            this.client = client;
+        }
     }
 
     public abstract init(callback?: Function): Promise<void>;

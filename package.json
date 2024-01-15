@@ -1,6 +1,6 @@
 {
-  "name": "meng_wechat_client",
-  "version": "2.1.1_beta",
+  "name": "wechat_client",
+  "version": "2.2.0-beta",
   "scripts": {
     "build": "tsc",
     "dev": "nodemon --ext js,ts --exec \"./node_modules/.bin/ts-node src/app.ts\"",
@@ -42,7 +42,7 @@
   "dependencies": {
     "@sapphire/snowflake": "^3.5.2",
     "ajv": "^8.12.0",
-    "axios": "^0.24.0",
+    "axios": "1.6.0",
     "cheerio": "^1.0.0-rc.10",
     "config": "^3.3.9",
     "dayjs": "^1.10.7",

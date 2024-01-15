@@ -1,13 +1,13 @@
-import {IWechatConfig} from "#/config";
 import {MqttPublisher} from "#wechat/message_publisher/publisher/mqtt_publisher";
 import {LocalPublisher} from "#wechat/message_publisher/publisher/local_publisher";
 import {BaseMessagePublisher} from "#wechat/message_publisher/base_publisher";
 import {DisabledPublisher} from "#wechat/message_publisher/publisher/disabled_publisher";
 import {BaseWechatClient} from "#wechat/clients/wechat_client";
+import {ManagerConfigType} from "#wechat/message_publisher/manager";
 
 export type publisherType = 'mqtt' | 'local' | 'disabled';
 
-export function publisherFactory(type: publisherType, config: IWechatConfig, client: BaseWechatClient): BaseMessagePublisher {
+export function publisherFactory(type: publisherType, config: ManagerConfigType, client: BaseWechatClient): BaseMessagePublisher {
     switch (type) {
         case "mqtt":
             return new MqttPublisher(config, client);

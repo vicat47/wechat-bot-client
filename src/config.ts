@@ -6,6 +6,7 @@ export enum StrBoolEnum {
 }
 
 export interface IWechatConfig {
+  clientType: 0 | 1;
   webSocketUrl: string;
   httpUrl: string;
   mqttUrl: string;

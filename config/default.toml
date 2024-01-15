@@ -3,15 +3,34 @@
 admin = '请指定您的WXID'
 
 [datasource]
-type = "postgres"
-host = "127.0.0.1"
-port = 5432
-schema = "public"
-username = "postgres"
-password = "postgres"
-database = "wechat_bot"
+type = "sqlite"
+database = "data/wechat_bot.sqlite"
+
+#[datasource]
+#type = "postgres"
+#host = "127.0.0.1"
+#port = 5432
+#schema = "public"
+#username = "postgres"
+#password = "postgres"
+#database = "wechat_bot"
+
+[wechat_server]
+# （必填）客户端类型，0：laozhang，1: com
+clientType = 0
+# （必填）http 链接的 url
+httpUrl = 'http://wechat_server:5555'
+# （必填）websocket 的 url
+webSocketUrl = 'ws://wechat_server:5555'
+## （非必填）mqtt 的 url
+#mqttUrl = 'mqtt://mqtt_server:9002'
+## （非必填）名称，主要用于判断是否被 @
+#name = 'xxxxxxxx'
+## （非必填）id，监听的微信 ID
+#id = 'wxid_xxxxxxxxxx'
 
 # 节假日 API 配置
 [holiday]
 api = 'https://api.apihubs.cn/holiday/get'
 param = { holiday_recess = 1, cn = 1, size = 50 }
+

@@ -1,6 +1,6 @@
 import {IWechatConfig} from "#/config";
 import BaseWechatMessage, {IWechatSendMessage, SystemMessageTypeEnum, WechatMessageTypeEnum} from "#wechat/base_wechat";
-import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IUserContent} from "#wechat/data";
+import {IBaseContentMessage, IGroupUserContent, IGroupUserNickContent, IPersonalInfo, IUserContent} from "#wechat/data";
 import {callSysMethod} from "#/system/api";
 import {getPromiseByRequestId, ISysCallRequest, ISysCallResponse, SysCallStatusEnum} from "#system/sys_call";
 import {delay} from "#/utils/tool";
@@ -11,37 +11,9 @@ import {publisherType} from "#wechat/message_publisher/publisher/factory";
 
 
 export abstract class BaseWechatClient {
-    public readonly id: string;
-    public readonly name: string;
-    protected config: IWechatConfig;
-    private msgSendQueue: {
-        resolve: any;
-        reject: any;
-    }[] = [];
-    private readonly serviceProcessorChain: BaseWechatMessageProcessService[] = [];
-
-    protected readonly messagePublisherManager: MessagePublisherManager;
-
-    abstract toWechatMessage(message: any): BaseWechatMessage;
-
-    abstract sendTxtMsg(content: string, target: string): Promise<any>;
-
-    abstract getUserList(): Promise<IBaseContentMessage<IUserContent>>;
-
-    abstract getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>>;
-
-    abstract getGroupUserNick(groupId: string, userId: string): Promise<IBaseContentMessage<IGroupUserNickContent>>;
-
-    abstract getMe(): Promise<any>;
-
-    abstract onClose(): void;
-
-    abstract onMessage(): (data: any) => Promise<void>;
-
     protected constructor(config: IWechatConfig) {
-        this.id = config.id;
-        this.name = config.name;
-        this.config = config;
+        this._id = config.id;
+        this._name = config.name;
         this.sendMessageWorker();
         let typeList: publisherType[] = [];
         if (config.mqttUrl?.length > 0) {
@@ -52,6 +24,71 @@ export abstract class BaseWechatClient {
         }
         this.messagePublisherManager = new MessagePublisherManager(typeList, config, this);
     }
+
+    private _id: string;
+    private msgSendQueue: {
+        resolve: any;
+        reject: any;
+    }[] = [];
+    private readonly serviceProcessorChain: BaseWechatMessageProcessService[] = [];
+
+    protected readonly messagePublisherManager: MessagePublisherManager;
+
+    public get id() {
+        return this._id;
+    }
+
+    protected set id(id: string) {
+        this._id = id;
+    }
+
+    private _name: string;
+
+    public get name() {
+        return this._name;
+    }
+
+    protected set name(name: string) {
+        this._name = name;
+    }
+
+    public abstract toWechatMessage(message: any): BaseWechatMessage;
+
+    public abstract sendTxtMsg(content: string, target: string): Promise<any>;
+
+    public abstract getUserList(): Promise<IBaseContentMessage<IUserContent>>;
+
+    public abstract getGroupUserList(): Promise<IBaseContentMessage<IGroupUserContent>>;
+
+    public abstract getGroupUserNick(groupId: string, userId: string): Promise<IBaseContentMessage<IGroupUserNickContent>>;
+
+    public abstract getMe(): Promise<IPersonalInfo>;
+
+    async updatePersonInfo(): Promise<IPersonalInfo> {
+        let personInfo = await this.getMe();
+        if (personInfo?.id) {
+            this.id = personInfo.id;
+        }
+        if (personInfo?.name) {
+            this.name = personInfo.name;
+        }
+        return personInfo;
+    }
+
+    async connect(): Promise<void> {
+        // TODO: 这里注意如果 mqtt 连接之前有其他的异步任务，则会出现问题，导致 mqtt 连接无法正常 onconnect
+        await this.messagePublisherManager.init();
+        await Promise.all([this.getMe().then(res => {
+            console.log(res);
+        }),
+            this.getUserList().then(res => {
+                console.log(res);
+            })]);
+    }
+
+    protected abstract onClose(): void;
+
+    protected abstract onMessage(): (data: any) => Promise<void>;
 
     public async registryMessageProcessServices(...services: BaseWechatMessageProcessService[]) {
         this.serviceProcessorChain.push(...services);
@@ -121,7 +158,6 @@ export abstract class BaseWechatClient {
                     status: SysCallStatusEnum.SUCCESS,
                 }
                 return resp;
-                // this.mqttClient.publish(`wechat/${this.id}/receive/sys`, JSON.stringify(resp));
             }).then((resp) => {
             this.messagePublisherManager.send({
                 type: SystemMessageTypeEnum.SYSCALL_RESPONSE_MESSAGE,
@@ -139,7 +175,6 @@ export abstract class BaseWechatClient {
                 type: SystemMessageTypeEnum.SYSCALL_RESPONSE_MESSAGE,
                 data: resp
             });
-            // this.mqttClient.publish(`wechat/${this.id}/receive/sys`, JSON.stringify(resp));
         });
     }
 
@@ -149,11 +184,6 @@ export abstract class BaseWechatClient {
         if (promise) {
             promise.resolve(response); // Resolve the promise with the system response
         }
-    }
-
-    protected async connect(): Promise<void> {
-        // TODO: 这里注意如果 mqtt 连接太快会有问题
-        await this.messagePublisherManager.init();
     }
 
     private async sendMessageWorker() {

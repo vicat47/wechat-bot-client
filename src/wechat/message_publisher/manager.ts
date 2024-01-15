@@ -6,18 +6,26 @@ import {BasePolicy, policyFactory, publisherPolicy} from "#wechat/message_publis
 import {IPublisher} from "#wechat/message_publisher/publish_interface";
 import {publisherFactory, publisherType} from "#wechat/message_publisher/publisher/factory";
 
+export type ManagerConfigType = Pick<IWechatConfig, 'mqttUrl' | 'id'>;
+
 export class MessagePublisherManager implements IPublisher {
     private readonly publisherList: BaseMessagePublisher[];
     private readonly policy: BasePolicy;
     private readonly client: BaseWechatClient;
 
-    public constructor(types: publisherType[], config: IWechatConfig, client: BaseWechatClient, policy: publisherPolicy = "all") {
+    public constructor(types: publisherType[], config: ManagerConfigType, client: BaseWechatClient, policy: publisherPolicy = "all") {
         this.client = client;
         this.publisherList = [];
         for (let type of new Set(types)) {
             this.publisherList.push(publisherFactory(type, config, this.client));
         }
         this.policy = policyFactory(this.publisherList, policy);
+    }
+
+    public update(config?: ManagerConfigType, client?: BaseWechatClient) {
+        this.publisherList.forEach(item => {
+            item.update(config, client);
+        });
     }
 
     async init(callback?: Function): Promise<void> {
