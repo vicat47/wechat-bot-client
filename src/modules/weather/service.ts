@@ -67,9 +67,9 @@ async function getWeatherInfo(baseUrl: string, cityId: number) {
             wD,
             wS
         };
-        return await Promise.resolve(data);
+        return data;
     } catch {
-        return await Promise.reject(new Error('获取天气预报异常！'));
+        throw new Error('获取天气预报异常！');
     }
 }
 
@@ -81,13 +81,11 @@ function getRandomIntInclusive(min: number, max: number): number {
 
 class WeatherService extends LocalWechatMessageProcessService {
     public handleNext: boolean = false;
-    private _config: IWeatherConfig;
 
     service?: AxiosInstance;
     serviceCode: string = serviceCode;
     constructor(clientConfig: IWechatConfig, config: IWeatherConfig) {
         super(clientConfig, config);
-        this._config = config;
     }
     async canProcess(message: base_wechat): Promise<boolean> {
         return this.simpleMessageProcessorTest(message, ['天气']);
@@ -118,7 +116,7 @@ ${content}
         return "回复关键字 天气"
     }
 
-    async triggerSchedule(): Promise<string | null> {
+    protected async triggerSchedule(): Promise<string | null> {
         const {
             weathers,
             content,

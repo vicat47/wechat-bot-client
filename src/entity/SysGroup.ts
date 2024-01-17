@@ -1,4 +1,4 @@
-import {Column, Entity, PrimaryColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, PrimaryColumn} from "typeorm";
 
 @Entity()
 export class SysGroup {
@@ -8,6 +8,6 @@ export class SysGroup {
     name!: string;
     @Column({name: "nick_name"})
     nickName!: string;
-    @Column({name: "create_time"})
+    @CreateDateColumn({name: "create_time"})
     createTime!: string;
 }

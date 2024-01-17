@@ -86,7 +86,8 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                     },
                     {
                         name: "type",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "value 的类型，有字符串和数组"
                     },
                     cTimeFieldProvider(),
                 ]
@@ -130,28 +131,34 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                     },
                     {
                         name: "code",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "模块业务code"
                     },
                     {
                         name: "name",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "模块名称",
                     },
                     {
                         name: "module_code",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "模块code，需要与模块真实 code 对应"
                     },
                     {
                         name: "client_id",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "所属 clientId",
                     },
                     {
                         name: "type",
                         type: "varchar",
                         default: "0",
+                        comment: "0: local, 1: remote; 用于区分所属的客户端"
                     },
                     {
                         name: "priority",
-                        type: "integer"
+                        type: "integer",
+                        comment: "优先级，越大的越靠前，最大的为默认模块，不需要加启动命令"
                     },
                     {
                         name: "enable",
@@ -190,15 +197,18 @@ export class PostRefactoring1704692532677 implements MigrationInterface {
                         name: "user_id",
                         type: "varchar",
                         isNullable: true,
+                        comment: "该配置生效的用户\n若群组为 null，则为单聊权限\n若群组不为 null，则为针对群中用户的配置"
                     },
                     {
                         name: "group_id",
                         type: "varchar",
                         isNullable: true,
+                        comment: "该配置生效的群"
                     },
                     {
                         name: "type",
-                        type: "varchar"
+                        type: "varchar",
+                        comment: "配置类型，取值 json/string"
                     },
                     {
                         name: "enable",

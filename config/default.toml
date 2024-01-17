@@ -34,3 +34,4 @@ webSocketUrl = 'ws://wechat_server:5555'
 api = 'https://api.apihubs.cn/holiday/get'
 param = { holiday_recess = 1, cn = 1, size = 50 }
 
+

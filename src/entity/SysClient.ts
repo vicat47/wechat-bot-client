@@ -1,4 +1,4 @@
-import {Column, Entity, PrimaryColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, PrimaryColumn} from "typeorm";
 import {IWechatConfig} from "#/config";
 
 @Entity()
@@ -15,6 +15,6 @@ export class SysClient implements IWechatConfig {
     name!: string;
     @Column({name: "client_type"})
     clientType!: 0 | 1;
-    @Column({name: "create_time"})
+    @CreateDateColumn({name: "create_time"})
     createTime!: string;
 }

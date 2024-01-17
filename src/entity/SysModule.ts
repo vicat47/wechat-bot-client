@@ -1,4 +1,4 @@
-import {Column, Entity, OneToMany, PrimaryGeneratedColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import {SysModuleConfig} from "#/entity/SysModuleConfig";
 
 @Entity()
@@ -19,7 +19,7 @@ export class SysModule {
     priority!: number;
     @Column()
     enable!: string;
-    @Column({name: "create_time"})
+    @CreateDateColumn({name: "create_time"})
     createTime!: string;
     @OneToMany(() => SysModuleConfig, (moduleConfig) => moduleConfig.sysModule, {
         createForeignKeyConstraints: false,

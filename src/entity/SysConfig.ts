@@ -1,4 +1,4 @@
-import {Column, Entity, PrimaryGeneratedColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, PrimaryGeneratedColumn} from "typeorm";
 
 @Entity()
 export class SysConfig {
@@ -12,6 +12,6 @@ export class SysConfig {
     value!: string;
     @Column()
     type!: string;
-    @Column({name: "create_time"})
+    @CreateDateColumn({name: "create_time"})
     createTime!: string;
 }

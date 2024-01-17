@@ -1,13 +1,11 @@
-import {In} from "typeorm";
+import {In, IsNull} from "typeorm";
 import {AppDataSource} from "#/data_source";
 import {SysClient} from "#entity/SysClient";
-import {SysConfig} from "#entity/SysConfig";
 import {SysModule} from "#entity/SysModule";
 import {SysModuleConfig} from "#entity/SysModuleConfig";
 import {asEnum, mergeDeep} from "#/utils/tool";
 import {BaseWechatClient} from "#wechat/clients/wechat_client";
 
-const configRepository = AppDataSource.getRepository(SysConfig);
 const moduleRepository = AppDataSource.getRepository(SysModule);
 const moduleConfigRepository = AppDataSource.getRepository(SysModuleConfig);
 const sysClientRepository = AppDataSource.getRepository(SysClient);
@@ -142,10 +140,10 @@ export async function getClientModuleConfig(clientId: string, options?: IClientC
             enable: EnableStatus.ENABLE,
             clientId: clientId,
             moduleCode: options?.moduleCode,
-            configs: {
-                enable: EnableStatus.ENABLE,
-                key: options?.keys === undefined ? undefined : In(options.keys),
-            },
+            configs: [
+                {id: IsNull(), sysModuleId: IsNull()},
+                {enable: EnableStatus.ENABLE, key: options?.keys === undefined ? undefined : In(options.keys),}
+            ],
         }
     });
 }
@@ -189,13 +187,12 @@ export async function getModuleConfig(moduleId: string, options?: IBaseClientGet
         where: {
             enable: EnableStatus.ENABLE,
             id: moduleId,
-            configs: {
-                enable: EnableStatus.ENABLE,
-                key: options?.keys === undefined ? undefined: In(options.keys),
-            }
+            configs: [
+                {id: IsNull(), sysModuleId: IsNull()},
+                {enable: EnableStatus.ENABLE, key: options?.keys === undefined ? undefined : In(options.keys),}
+            ],
         }
     });
-    // TODO: 没有详细配置项的模块无法启动
     if (moduleConfig === undefined || moduleConfig === null) {
         return undefined;
     }

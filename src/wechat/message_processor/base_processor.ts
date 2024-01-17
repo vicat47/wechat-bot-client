@@ -3,6 +3,8 @@ import {IBaseWechatServiceConfig, IWechatConfig} from "#/config";
 import {getClientName} from "#system/sys_config";
 import BaseWechatMessage, {IWechatSendMessage, WechatMessageTypeEnum} from "#wechat/base_wechat";
 import {snowflake} from "#/app";
+import schedule from "node-schedule";
+import {isGroup, isUser} from "#wechat/util";
 
 export interface IWechatMessageProcessor {
     readonly handleNext: boolean
@@ -41,6 +43,15 @@ export abstract class BaseWechatMessageProcessService implements IWechatMessageP
         this.serviceConfig = serviceConfig;
         this.serviceId = serviceConfig.id;
         this.atRegex = new RegExp(`@${config.name}[\\s ]`);
+        this.registerSchedule(serviceConfig);
+    }
+
+    /**
+     * 触发定时任务
+     * @protected
+     */
+    protected async triggerSchedule(): Promise<string | null> {
+        return null;
     }
 
     public abstract get serviceCode(): string;
@@ -145,6 +156,26 @@ export abstract class BaseWechatMessageProcessService implements IWechatMessageP
             content: msg
         }
         await this.sendMessage(resMsg);
+    }
+
+    private registerSchedule(config: any) {
+        let cronSchedule = config?.cronSchedule;
+        let cronTargets = config?.cronTargets;
+        if (cronSchedule && cronTargets) {
+            let parse: string[] = JSON.parse(cronTargets);
+            if (!(parse instanceof Array)) {
+                throw new Error("cronTargets must be an array");
+            }
+            let targets = parse.map(item => item.trim());
+            let sendUsers = targets.filter(item => isUser(item));
+            let sendGroup = targets.filter(item => isGroup(item));
+            schedule.scheduleJob(cronSchedule, async () => {
+                let message = await this.triggerSchedule();
+                if (message?.length && message.length > 0) {
+                    await this.triggerBroadcast(sendGroup, sendUsers, message);
+                }
+            });
+        }
     }
 
     protected abstract sendMessage(message: IWechatSendMessage): Promise<void>;

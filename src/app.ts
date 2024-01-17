@@ -16,6 +16,7 @@ import {IWechatConfig} from "#/config";
 import {insertSysClient, updateSysClientPersonInfo} from "#/dao/sys_client";
 import Ajv from "ajv";
 import {SysClient} from "#entity/SysClient";
+import {syncUserList} from "#system/sys_contact";
 
 export const globalClient: {
     [clientId: string]: BaseWechatClient
@@ -89,6 +90,8 @@ async function main() {
         // -------------------
         // 连接客户端
         await client.connect();
+        console.log("客户端已连接，将同步用户列表...");
+        await syncUserList(client);
         // -------------------
         // 加载模块
         let initList = [];

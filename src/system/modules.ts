@@ -6,7 +6,7 @@ import {BaseWechatMessageProcessService} from "#wechat/message_processor/base_pr
 const ajv = new Ajv()
 
 interface SysModule {
-    register: <T extends BaseWechatMessageProcessService>(arg0: IWechatConfig, arg1: any) => T,
+    register: (arg0: IWechatConfig, arg1: any) => BaseWechatMessageProcessService,
     serviceCode: string,
 }
 
@@ -20,7 +20,7 @@ const sysModuleSchema = {
 }
 const sysModuleValidate = ajv.compile(sysModuleSchema);
 
-export async function registryModuleServices<T extends BaseWechatMessageProcessService>(clientId: string, module: SysModule): Promise<T[]> {
+export async function registryModuleServices(clientId: string, module: SysModule): Promise<BaseWechatMessageProcessService[]> {
     if (!sysModuleValidate(module)) {
         let errorMessage = sysModuleValidate.errors?.map(item => item.message).join('\n');
         throw new Error(`module validate not pass...${errorMessage}`);
@@ -28,7 +28,7 @@ export async function registryModuleServices<T extends BaseWechatMessageProcessS
     let moduleConfigList = await getClientModuleGlobalConfig(clientId, {
         moduleCode: module.serviceCode,
     });
-    let serviceList = [];
+    let serviceList: BaseWechatMessageProcessService[] = [];
     let client = await getSysClientById(clientId);
     if (client === null) {
         throw new Error("sys client id not exists");
@@ -40,7 +40,8 @@ export async function registryModuleServices<T extends BaseWechatMessageProcessS
             conf = {};
         }
         conf.id = moduleConfig.id.toString();
-        serviceList.push(module.register(client, conf));
+        let processService: BaseWechatMessageProcessService = module.register(client, conf);
+        serviceList.push(processService);
         console.log(`服务 ${module.serviceCode}: ${ moduleConfig.id } 已初始化，已加载`);
     }
     return serviceList;

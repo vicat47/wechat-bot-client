@@ -1,4 +1,4 @@
-import {Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
+import {Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn} from "typeorm";
 import {SysModule} from "#/entity/SysModule";
 
 @Entity()
@@ -17,7 +17,7 @@ export class SysModuleConfig {
     groupId!: string;
     @Column()
     type!: string;
-    @Column({name: "create_time"})
+    @CreateDateColumn({name: "create_time"})
     createTime!: string;
     @Column()
     enable!: string;
