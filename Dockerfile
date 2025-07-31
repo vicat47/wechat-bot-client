@@ -14,7 +14,7 @@ WORKDIR /app
 COPY package*.json .
 RUN npm install --production --registry=https://registry.npmmirror.com
 
-COPY --from=builder /app/out .
+COPY --from=builder /app/out ./out
 COPY ./config/* ./config/
 
-ENTRYPOINT ["node", "app.js"]
+ENTRYPOINT ["node", "out/app.js"]

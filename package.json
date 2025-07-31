@@ -55,7 +55,6 @@
     "pg": "^8.11.1",
     "reflect-metadata": "^0.1.13",
     "rss-feed-emitter": "^3.2.3",
-    "sqlite3": "^5.1.7",
     "toml": "^3.0.0",
     "ts-xpath": "^0.3.1",
     "typeorm": "^0.3.17",
