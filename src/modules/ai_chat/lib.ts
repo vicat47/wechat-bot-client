@@ -56,3 +56,26 @@ export abstract class HistoryManager<T> {
         return false;
     }
 }
+
+export class EmptyHistoryManager extends HistoryManager<IMessage> {
+
+    get(target: string): IMessage[] | undefined {
+        return undefined;
+    }
+
+    public append(target: string, item: IMessage): IMessage[] {
+        return [];
+    }
+
+    public clearAll(target: string): boolean {
+        return false;
+    }
+
+    setPrompt(target: string, prompt: string): boolean {
+        return false;
+    }
+
+    clearHistory(target: string): boolean {
+        return false;
+    }
+}

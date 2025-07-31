@@ -11,7 +11,7 @@ import {IAiChatConfig} from "./config";
 import {IChatGPTReply} from "./channel/chatgpt/api";
 import {ChatGptRequest} from "./entity";
 import {aiChatCommandFactory} from "./command";
-import {aiChatSigletonFactory} from "./channel/factory";
+import {aiChatSingletonFactory} from "./channel/factory";
 import {LocalWechatMessageProcessService} from "#wechat/message_processor/processor/local_processor";
 import {BaseConfigService} from "#system/config_service/base_config";
 import {SysCallConfigService} from "#system/config_service/service/sys_call_config_service";
@@ -94,7 +94,7 @@ export class AiChatService extends LocalWechatMessageProcessService {
         super(clientConfig, config);
 
         this.configService = new SysCallConfigService(this);
-        this.aiChatFactory = aiChatSigletonFactory({
+        this.aiChatFactory = aiChatSingletonFactory({
             processService: this,
             configService: this.configService,
             config: config as any,
