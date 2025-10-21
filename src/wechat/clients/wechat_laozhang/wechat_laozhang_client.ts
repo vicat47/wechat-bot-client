@@ -1,4 +1,3 @@
-import WebSocket from "ws";
 import config from "config";
 import {AxiosInstance} from "axios";
 
@@ -10,36 +9,65 @@ import BaseWechatMessage, {WechatMessageTypeEnum} from "#wechat/base_wechat";
 import httpWechatServiceFactory from "#wechat/request";
 
 import WeChatMessage, {RecvMsg, WechatMessageType, XMLMessageContent} from "./wechat_laozhang";
+import { IConnectionManager } from "#/wechat/connection/connection_manager";
+import WebSocketConnectionManager from "#/wechat/connection/impl/websocket_connection";
 
 class WechatLaoZhangClient extends BaseWechatClient {
-    private websocket?: WebSocket;
     private readonly websocketUrl: string;
     private readonly service: AxiosInstance;
+    private readonly conn: IConnectionManager;
 
     constructor(config: IWechatConfig) {
         super(config);
         this.websocketUrl = config.webSocketUrl;
         this.service = httpWechatServiceFactory(config)();
+        this.conn = new WebSocketConnectionManager();
     }
 
     async connect(): Promise<any> {
-        this.websocket = new WebSocket(this.websocketUrl);
-        this.websocket.on("message", this.onMessage());
-        this.websocket.on("close", this.onClose());
-        let websocket = this.websocket;
-        let pList: Promise<any>[] = [];
-        pList.push(super.connect());
-        pList.push(new Promise<void>((resolve, reject) => {
-            websocket.on("open", async () => {
-                console.log(`websocket ${this.id} 已连接`);
-                for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
-                    await this.sendTxtMsg(`wxid: ${this.id} 服务已启动，已连接`, adminUser);
+        // 取消因手动关闭导致的重连限制（由 connection manager 管理）
+        // 绑定事件（重复绑定会被 connection manager 内部去重/覆盖请注意）
+        this.conn.on("open", this.onOpen());
+        // message 可能是 Buffer / string
+        this.conn.on("message", async (data: any) => {
+            // 把数据转发给原有的 onMessage 处理器
+            await this.onMessage()(data);
+        });
+        this.conn.on("close", this.onClose());
+        this.conn.on("error", this.onError());
+
+        // 等待底层连接建立，同时保持 super.connect() 行为
+        return await Promise.all([
+            super.connect(),
+            this.conn.connect(this.websocketUrl)
+        ]);
+    }
+
+    async close(): Promise<void> {
+        // 交由 connection manager 关闭并视为手动关闭（停止自动重连）
+        await this.conn.close(true);
+    }
+
+    private onOpen(): () => void {
+        return () => {
+            console.log(`websocket ${this.id} 已连接`);
+            // 通知管理员（只在第一次连接或重连成功时发送）
+            (async () => {
+                try {
+                    for (let adminUser of (config.get("admin") as string).split(/\s*,\s*/)) {
+                        await this.sendTxtMsg(`wxid: ${this.id} 服务已启动，已连接`, adminUser);
+                    }
+                } catch (e) {
+                    console.error("通知管理员失败：", e);
                 }
-                resolve();
-            });
-            setTimeout(() => reject("websocket not connected..."), 15000);
-        }));
-        return await Promise.all(pList);
+            })();
+        };
+    }
+
+    private onError(): (err: any) => void {
+        return (err) => {
+            console.error("websocket error:", err);
+        };
     }
 
     async getMe(): Promise<IPersonalInfo> {
@@ -137,15 +165,15 @@ class WechatLaoZhangClient extends BaseWechatClient {
         }
     }
 
-    protected onMessage(): (data: WebSocket.RawData) => Promise<void> {
+    protected onMessage(): (data: any) => Promise<void> {
         let that = this;
         return async (data) => {
+            // data 可能是 Buffer/string，根据原来代码处理
             const j = JSON.parse(data.toString());
             const type = j.type;
             switch (type) {
                 case WechatMessageType.RECV_TXT_MSG:
                     console.log(data.toString());
-                    // that.publishMessage(that.toWechatMessage(new RecvMsg<string>(j)));
                     super.processReceivedMessage(that.toWechatMessage(new RecvMsg<string>(j)));
                     break;
                 case WechatMessageType.RECV_PIC_MSG:
@@ -155,7 +183,6 @@ class WechatLaoZhangClient extends BaseWechatClient {
                         let c = j.content as XMLMessageContent;
                         let xmlMessage = new WechatXMLMessage(c.content);
                         j.content.content = xmlMessage;
-                        // that.publishMessage(that.toWechatMessage(new RecvMsg<XMLMessageContent>(j)));
                         super.processReceivedMessage(that.toWechatMessage(new RecvMsg<XMLMessageContent>(j)));
                     } catch (e) {
                         console.error(`XML 消息转换失败。。。\n${j}`);
