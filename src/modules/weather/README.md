@@ -147,7 +147,7 @@ weather 的配置**不在** `config/default.toml`（该文件没有 weather 段�
    容器内验证：`docker compose exec <服务名> node -e "require('axios').get('<完整URL>').then(r=>console.log(r.data.code))"`。
 2. `baseUrl` 用 `https` 而出口只做 `http`、或域名需要走代理，是最常见的两类超时原因；确认代理与 DNS（weather 不支持模块级 `proxy` 配置）。
 3. 与协议端/微信侧无关：超时时 `handleNext = false` 的模块已经命中，这条消息不会再被其它服务处理。
-4. 偶发超时会让该条消息没有任何回复；同时注意 `replyMessage` 抛出的错误没有调用方捕获（消息链循环外没有 try/catch，`wechat_client.ts:113-117`；客户端回调处也未 await，`wechat_laozhang_client.ts:177`），未处理的 Promise rejection 在 Node LTS 默认会终止进程，表现为「天气接口一超时就掉线/重启」。
+4. 偶发超时会让该条消息没有任何回复；同时注意 `replyMessage` 抛出的错误没有调用方捕获（消息链循环外没有 try/catch，`src/wechat/clients/wechat_client.ts:113-117`；客户端回调处也未 await，`src/wechat/clients/wechat_laozhang/wechat_laozhang_client.ts:177`），未处理的 Promise rejection 在 Node LTS 默认会终止进程，表现为「天气接口一超时就掉线/重启」。
 
 ### 2. 返回结构变化
 
