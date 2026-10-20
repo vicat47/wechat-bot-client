@@ -30,7 +30,14 @@
 > 1. `getClientName` 是 `async`（`src/system/sys_config.ts:39-46`），这里没有 `await`，模板串里插进去的是 Promise，实际比较字符串是 `"@[object Promise]\u2005"`；
 > 2. `indexOf` 的主语和参数写反了，只有当消息内容是 `"@[object Promise]\u2005"` 的**子串**时才可能通过（`天气` 不是）。
 > 于是第 93 行的去 @ 逻辑也拿不到干净的 `天气`。
-> 该判断被 `homeassistant` 模块同样复制（`src/modules/homeassistant/service.ts:39`），而 `system`/`jenkins`/`ai_chat` 等模块使用 `this.atRegex` 自行处理 @，不受影响。
+> 影响面按「该模块自己怎么处理 @」分两类（全仓 `grep -rn atRegex src`、`grep -rn getClientName src` 的结果）：
+>
+> | 类别 | 模块与行号 | 群聊 @ 判定 |
+> | --- | --- | --- |
+> | 使用 `this.atRegex`（由 `config.name` 同步构造，`base_processor.ts:37,45`），**不受该缺陷影响** | `src/modules/system/service.ts:29,33,60`、`src/modules/ai_chat/service.ts:126,129,185` | 正常 |
+> | 存在同一处未 `await` 的 `getClientName` | 基类 `src/wechat/message_processor/base_processor.ts:90,93` —— 其 `simpleMessageProcessorTest` 调用方：`weather/service.ts:91`、`template/service.ts:37`、`newspaper/service.ts:49`、`fishtouch/service.ts:97`；以及各自复制该写法的 `homeassistant/service.ts:39,42,51`、`jenkins/service.ts:56,59,72`、`stable_diffusion/service.ts:63,67,80`、`template/service.ts:46` | 恒不成立 |
+>
+> 即 `jenkins`、`stable_diffusion` 并不在 `atRegex` 一类，它们的群聊 @ 判定同样失效；`template` 两处写法都有。
 > **群里要天气，目前请用定时播报（`cronTargets` 指向群 ID）。**
 
 命中后 `handleNext = false`（`service.ts:83`），消息处理链在此终止，后续服务不再处理该条消息（`src/wechat/clients/wechat_client.ts:113-131`）。
@@ -173,7 +180,8 @@ weather 的配置**不在** `config/default.toml`（该文件没有 weather 段�
 ### 4. 单聊正常、群里不回复
 
 按上文「群聊关键字当前不会触发」定位：这是 `base_processor.ts:90` 的实现问题，不是 weather 配置问题。
-临时规避：用 `cronSchedule` + `cronTargets`（群 ID）做定时播报；根因修复需改基类，请提缺陷工单。
+临时规避：用 `cronSchedule` + `cronTargets`（群 ID）做定时播报。
+根因修复请提缺陷工单，且**只改基类不够**：`homeassistant`、`jenkins`、`stable_diffusion`、`template` 各自复制了同一处未 `await` 的写法（见上表行号），需要一并处理，否则这些模块的群聊 @ 仍然失效。
 
 ### 5. 一个消息收到多次回复
 
