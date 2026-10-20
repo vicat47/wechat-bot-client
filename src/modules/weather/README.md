@@ -95,7 +95,7 @@ weather 的配置**不在** `config/default.toml`（该文件没有 weather 段�
 | `baseUrl` | `listWeather` 的访问前缀，会拼成 `{baseUrl}/weather/listWeather` | ✅ | string | 无默认值；未配置时地址变成 `undefined/weather/listWeather`，请求失败 | `src/config.ts:37`、`service.ts:53,103,124` |
 | `cronSchedule` | node-schedule 的 cron 表达式，用于定时播报 | 定时播报必填 | string | 未配置（或 `cronTargets` 缺失）= 不注册定时任务 | `base_processor.ts:161-164` |
 | `cronTargets` | 播报目标列表的 **JSON 字符串**，群 ID 与用户 WXID 可混填，元素两端空格会被 `trim()` | 定时播报必填 | json（`string[]`） | 同上；不是数组时构造阶段抛 `cronTargets must be an array` | `base_processor.ts:162-171` |
-| `id` | 服务实例 ID，等于 `sys_module.id` | 框架注入，**请勿手填** | string | — | `src/system/modules.ts:36` |
+| `id` | 服务实例 ID，等于 `sys_module.id` | 框架注入，**请勿手填** | string | — | `src/system/modules.ts:42` |
 
 ### 继承但 weather 未使用的键（配了也不生效）
 
@@ -118,7 +118,7 @@ weather 的配置**不在** `config/default.toml`（该文件没有 weather 段�
 
 1. 删除（或重命名）`src/modules/weather/disabled.ts`；构建产物里对应 `out/modules/weather/disabled.js` 也要一并消失，因为 `load_modules` 在运行目录同时检测 `.ts` 与 `.js`（`load_modules.ts:21-28`）。
 2. 按上节在 `sys_module` / `sys_module_config` 建好 `module_code='weather'` 的模块行与 `cityId`、`baseUrl` 配置。
-3. 重启进程，启动日志确认：`模块 weather 已加载`、`服务 weather: <模块ID> 已初始化，已加载`、`共启动 N 个服务`（`src/app.ts:100-118`）。
+3. 重启进程，启动日志确认：`模块 weather 已加载`（`src/app.ts:111`）、`服务 weather: <模块ID> 已初始化，已加载`（`src/system/modules.ts:45`）、`共启动 N 个服务`（`src/app.ts:118`）。
 4. 单聊发送 `天气` 验证回复；配置了 cron 时，可先把 `cronSchedule` 设成近一分钟以验证播报链路。
 
 ## 常见失败与排查
@@ -131,7 +131,7 @@ weather 的配置**不在** `config/default.toml`（该文件没有 weather 段�
 | 现象 | 结论 |
 | --- | --- |
 | `模块 weather 已跳过（通过 disabled.js）` | `disabled.ts`/`disabled.js` 还在，见上节步骤 1 |
-| 启动日志有 `模块 weather 已加载` 但没有 `服务 weather: ... 已初始化` | `sys_module` 里没有 `module_code='weather'` 且 `enable='1'`、`client_id` 匹配的行 ⇒ 没有服务实例（`system/modules.ts:26-30`） |
+| 启动日志有 `模块 weather 已加载` 但没有 `服务 weather: ... 已初始化` | `sys_module` 里没有 `module_code='weather'` 且 `enable='1'`、`client_id` 匹配的行 ⇒ 没有服务实例（过滤条件在 `src/system/sys_config.ts:134-149`，`enable` 第 140 行、`client_id` 第 141 行；`服务 ... 已初始化` 由 `src/system/modules.ts:45` 打印） |
 | `模块 weather 初始化出错...` | 配置阶段抛错，常见为 `cronTargets` 不是数组或不是合法 JSON（构造实例时即执行 `registerSchedule`） |
 | 有 `服务 weather: ... 已初始化`，但发 `天气` 后没有任何回复，stderr 直接抛 `Error: 获取天气预报异常！` 且**没有** `err ` 前缀的日志行 | 服务已实例化但拿到的是空配置/坏配置：`cityId`、`baseUrl` 的配置行 `enable ≠ '1'`（该谓词在 `src/system/sys_config.ts:145`，见「配置从哪里来」），或 `cityId` 的 `type` 不是 `number` 导致值为 `NaN`。接口以非 `'200'` 业务码返回时走成功分支 reject，不会打印 `err`（`src/utils/request.ts:22-26`）。按第 3 节 SQL 连 `enable`、`type` 一起核对 |
 | 以上都正常但不回复 | 继续看第 4 节 |
