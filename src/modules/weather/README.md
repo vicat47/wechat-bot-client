@@ -62,7 +62,7 @@
 | 鉴权 | 无 | 该接口不需要 token；weather 也没有读取任何认证配置 |
 | HTTP 客户端 | 全局 axios 实例 `#/utils/request` | `timeout: 10000`（10 秒，`src/utils/request.ts:6`），响应拦截器要求 `response.data.code === '200'`（字符串比较，`src/utils/request.ts:25`），否则以 `res.message` reject |
 | 重试 / 缓存 | 无 | 每次触发都实发一次请求（`service.ts:51-74`），没有缓存层，也没有失败重试 |
-| 微信协议端 | 配置项 `wechat_server`（`config/default.toml:18-30`） | 回复经 client 发送，协议端掉线时天气模块本身不报错但发不出消息 |
+| 微信协议端 | 配置项 `wechat_server`（`config/default.toml:18-30`） | 回复经 client 发送：`src/wechat/clients/wechat_client.ts:117-127` → `wechat_client.ts:134-146` → `src/wechat/clients/wechat_laozhang/wechat_laozhang_client.ts:132`（`POST /api/sendtxtmsg`）。该链路全程没有 try/catch，协议端不可达时 `post` 直接 reject，而 `src/wechat/clients/wechat_laozhang/wechat_laozhang_client.ts:177` 对 `processReceivedMessage` 未 `await` ⇒ 成为未处理 Promise rejection，表现同「接口超时」小节第 4 条（进程退出/重启），**不是**静默不发 |
 
 网络要求：进程所在主机/容器需能直连上述天气域名出网。代理方面注意：`IWechatWebRequestServiceConfig` 虽然声明了 `proxy` / `headers` / `auth` / `params`（`src/config.ts:36-42`），
 但 **weather 未读取这些字段**（`service.ts:5,53` 直接用全局实例，不传 per-request 配置），需要代理时请在运行环境层面处理。
